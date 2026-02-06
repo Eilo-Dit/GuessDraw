@@ -1,5 +1,6 @@
 #include "hotkeys.h"
 #include "globals.h"
+#include "drawing.h"
 
 using namespace std;
 
@@ -68,6 +69,20 @@ void KeyListener(HWND hwnd) {
             scaleFactor = max(0.1f, cur - 0.05f);
             InvalidateRect(hwnd, nullptr, TRUE);
             Sleep(100);
+        }
+
+        // 上一张图片
+        if (IsHotkeyPressed(g_hotkeys[HK_PREV_IMAGE])) {
+            SwitchImage(-1);
+            InvalidateRect(hwnd, nullptr, TRUE);
+            Sleep(200);
+        }
+
+        // 下一张图片
+        if (IsHotkeyPressed(g_hotkeys[HK_NEXT_IMAGE])) {
+            SwitchImage(1);
+            InvalidateRect(hwnd, nullptr, TRUE);
+            Sleep(200);
         }
 
         // 拖动修饰键 + 鼠标左键

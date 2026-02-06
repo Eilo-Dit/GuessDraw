@@ -2,7 +2,7 @@
 
 // ============ 快捷键默认配置 ============
 HotkeyBinding g_hotkeys[HK_COUNT] = {
-    { VK_DELETE,  false, false, false },  // HK_EXIT
+    { VK_END,     false, false, false },  // HK_EXIT
     { VK_NUMPAD0, false, false, false },  // HK_TOGGLE_VISIBLE
     { VK_DECIMAL, false, false, false },  // HK_RELOAD
     { VK_NUMPAD8, false, false, false },  // HK_OPACITY_UP
@@ -10,6 +10,8 @@ HotkeyBinding g_hotkeys[HK_COUNT] = {
     { VK_UP,      false, false, false },  // HK_SCALE_UP
     { VK_DOWN,    false, false, false },  // HK_SCALE_DOWN
     { VK_LCONTROL,false, false, false },  // HK_DRAG_MODIFIER
+    { VK_LEFT,    false, false, false },  // HK_PREV_IMAGE
+    { VK_RIGHT,   false, false, false },  // HK_NEXT_IMAGE
 };
 
 const wchar_t* GetHotkeyActionName(int action) {
@@ -22,6 +24,8 @@ const wchar_t* GetHotkeyActionName(int action) {
         L"放大图片",
         L"缩小图片",
         L"拖动修饰键",
+        L"上一张图片",
+        L"下一张图片",
     };
     if (action >= 0 && action < HK_COUNT) return names[action];
     return L"未知";
@@ -74,7 +78,8 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 static const wchar_t* s_hotkeyKeys[] = {
     L"Exit", L"ToggleVisible", L"Reload",
     L"OpacityUp", L"OpacityDown",
-    L"ScaleUp", L"ScaleDown", L"DragModifier"
+    L"ScaleUp", L"ScaleDown", L"DragModifier",
+    L"PrevImage", L"NextImage"
 };
 
 void LoadConfig() {

@@ -22,6 +22,8 @@ enum HotkeyAction {
     HK_SCALE_UP,
     HK_SCALE_DOWN,
     HK_DRAG_MODIFIER,   // 拖动修饰键
+    HK_PREV_IMAGE,      // 上一张图片
+    HK_NEXT_IMAGE,      // 下一张图片
     HK_COUNT
 };
 

@@ -1,6 +1,7 @@
 #include "drawing.h"
 #include "globals.h"
 #include <algorithm>
+#include <vector>
 #include <filesystem>
 
 using namespace Gdiplus;
@@ -29,6 +30,41 @@ std::wstring FindLatestImage(const std::wstring& dir) {
     } catch (...) {}
 
     return latestFile;
+}
+
+void SwitchImage(int direction) {
+    std::vector<std::wstring> images;
+    try {
+        for (const auto& entry : fs::directory_iterator(imageDirectory)) {
+            if (!entry.is_regular_file()) continue;
+            auto ext = entry.path().extension().wstring();
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::towlower);
+            if (ext == L".jpg" || ext == L".jpeg" || ext == L".png" || ext == L".bmp" ||
+                ext == L".gif" || ext == L".tiff" || ext == L".tif" || ext == L".ico" || ext == L".webp") {
+                images.push_back(entry.path().wstring());
+            }
+        }
+    } catch (...) { return; }
+
+    if (images.empty()) return;
+    std::sort(images.begin(), images.end());
+
+    // 找到当前图片的位置
+    int curIdx = -1;
+    for (int i = 0; i < (int)images.size(); i++) {
+        if (images[i] == currentImagePath) { curIdx = i; break; }
+    }
+
+    // 切换
+    int newIdx;
+    if (curIdx < 0) {
+        newIdx = (direction > 0) ? 0 : (int)images.size() - 1;
+    } else {
+        newIdx = curIdx + direction;
+        if (newIdx < 0) newIdx = (int)images.size() - 1;
+        if (newIdx >= (int)images.size()) newIdx = 0;
+    }
+    currentImagePath = images[newIdx];
 }
 
 void DrawTransparentWindow(HWND hwnd) {
