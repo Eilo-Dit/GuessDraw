@@ -81,7 +81,8 @@ std::wstring FindLatestImage(const std::wstring& dir) {
             auto ext = entry.path().extension().wstring();
             // 转小写比较
             std::transform(ext.begin(), ext.end(), ext.begin(), ::towlower);
-            if (ext == L".jpg" || ext == L".jpeg" || ext == L".png" || ext == L".bmp" || ext == L".gif") {
+            if (ext == L".jpg" || ext == L".jpeg" || ext == L".png" || ext == L".bmp" ||
+                ext == L".gif" || ext == L".tiff" || ext == L".tif" || ext == L".ico" || ext == L".webp") {
                 auto ftime = entry.last_write_time();
                 if (!found || ftime > latestTime) {
                     latestTime = ftime;
@@ -117,7 +118,7 @@ void DrawTransparentWindow(HWND hwnd) {
     graphics.Clear(Color(0, 0, 0, 0));
     graphics.SetInterpolationMode(InterpolationModeHighQualityBicubic);
 
-    Image image(currentImagePath.c_str());
+    Bitmap image(currentImagePath.c_str());
     if (image.GetLastStatus() != Ok) {
         SelectObject(hdcMem, hOldBitmap);
         DeleteObject(hBitmap);
@@ -173,13 +174,11 @@ void DrawTransparentWindow(HWND hwnd) {
         );
     } else {
         // 去白底模式：逐像素处理
-        Bitmap* pBmp = dynamic_cast<Bitmap*>(&image);
         Bitmap tempBmp(imgWidth, imgHeight, PixelFormat32bppARGB);
-
-        if (pBmp) {
+        {
             BitmapData srcData, dstData;
             Rect lockRect(0, 0, imgWidth, imgHeight);
-            pBmp->LockBits(&lockRect, ImageLockModeRead, PixelFormat32bppARGB, &srcData);
+            image.LockBits(&lockRect, ImageLockModeRead, PixelFormat32bppARGB, &srcData);
             tempBmp.LockBits(&lockRect, ImageLockModeWrite, PixelFormat32bppARGB, &dstData);
 
             BYTE* srcPixels = (BYTE*)srcData.Scan0;
@@ -212,7 +211,7 @@ void DrawTransparentWindow(HWND hwnd) {
                 }
             }
 
-            pBmp->UnlockBits(&srcData);
+            image.UnlockBits(&srcData);
             tempBmp.UnlockBits(&dstData);
         }
 
