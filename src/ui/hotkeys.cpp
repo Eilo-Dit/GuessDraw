@@ -36,7 +36,7 @@ void KeyListener(HWND hwnd) {
         // 重新加载
         if (IsHotkeyPressed(g_hotkeys[HK_RELOAD])) {
             reloadImage = true;
-            InvalidateRect(hwnd, nullptr, TRUE);
+            PostMessage(hwnd, WM_USER, 0, 0);
             Sleep(200);
         }
 
@@ -74,14 +74,16 @@ void KeyListener(HWND hwnd) {
         // 上一张图片
         if (IsHotkeyPressed(g_hotkeys[HK_PREV_IMAGE])) {
             SwitchImage(-1);
-            DrawTransparentWindow(hwnd);
+            reloadImage = true;
+            PostMessage(hwnd, WM_USER, 0, 0);
             Sleep(50);
         }
 
         // 下一张图片
         if (IsHotkeyPressed(g_hotkeys[HK_NEXT_IMAGE])) {
             SwitchImage(1);
-            DrawTransparentWindow(hwnd);
+            reloadImage = true;
+            PostMessage(hwnd, WM_USER, 0, 0);
             Sleep(50);
         }
 

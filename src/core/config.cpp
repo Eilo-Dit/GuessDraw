@@ -79,10 +79,14 @@ const wchar_t* GetConfigPath() {
     static wchar_t path[MAX_PATH] = {};
     if (path[0] == L'\0') {
         wchar_t appdata[MAX_PATH];
-        if (GetEnvironmentVariableW(L"APPDATA", appdata, MAX_PATH) > 0) {
+        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, appdata))) {
             swprintf(path, MAX_PATH, L"%s\\GuessDraw.ini", appdata);
         } else {
-            wcscpy(path, L"C:\\GuessDraw.ini");
+            // 回退到 exe 所在目录
+            GetModuleFileNameW(nullptr, path, MAX_PATH);
+            wchar_t* lastSlash = wcsrchr(path, L'\\');
+            if (lastSlash) *(lastSlash + 1) = L'\0';
+            wcscat(path, L"GuessDraw.ini");
         }
     }
     return path;
@@ -126,6 +130,8 @@ void LoadConfig() {
 }
 
 void SaveConfig() {
+    // DEBUG: 显示配置文件路径
+    MessageBoxW(nullptr, GetConfigPath(), L"SaveConfig 路径", MB_OK);
     wchar_t buf[MAX_PATH];
 
     // [Image]
