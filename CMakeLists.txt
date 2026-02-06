@@ -3,6 +3,12 @@ project(GuessDraw)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
+add_definitions(-DUNICODE -D_UNICODE)
+
+# MinGW UTF-8 源码编码支持
+if(MINGW)
+    add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+endif()
 
 add_executable(GuessDraw main.cpp)
 

@@ -38,7 +38,7 @@ std::atomic<int> windowOffsetY(0);
 HWND g_hwndMain = nullptr;
 HWND g_hwndSettings = nullptr;
 HINSTANCE g_hInstance = nullptr;
-NOTIFYICONDATA g_nid = {};
+NOTIFYICONDATAW g_nid = {};
 
 // ============ 常量定义 ============
 #define WM_TRAYICON      (WM_USER + 1)
@@ -237,27 +237,27 @@ void DrawTransparentWindow(HWND hwnd) {
 
 // ============ 系统托盘 ============
 void CreateTrayIcon(HWND hwnd) {
-    g_nid.cbSize = sizeof(NOTIFYICONDATA);
+    g_nid.cbSize = sizeof(NOTIFYICONDATAW);
     g_nid.hWnd = hwnd;
     g_nid.uID = 1;
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_TRAYICON;
     g_nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-    strcpy(g_nid.szTip, "GuessDraw");
-    Shell_NotifyIcon(NIM_ADD, &g_nid);
+    wcscpy(g_nid.szTip, L"GuessDraw");
+    Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
 
 void RemoveTrayIcon() {
-    Shell_NotifyIcon(NIM_DELETE, &g_nid);
+    Shell_NotifyIconW(NIM_DELETE, &g_nid);
 }
 
 void ShowTrayMenu(HWND hwnd) {
     HMENU hMenu = CreatePopupMenu();
-    AppendMenu(hMenu, MF_STRING, IDM_SHOW_HIDE, isWindowVisible ? "隐藏图片" : "显示图片");
-    AppendMenu(hMenu, MF_STRING, IDM_RELOAD, "重新加载");
-    AppendMenu(hMenu, MF_STRING, IDM_SETTINGS, "设置");
-    AppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenu(hMenu, MF_STRING, IDM_EXIT, "退出");
+    AppendMenuW(hMenu, MF_STRING, IDM_SHOW_HIDE, isWindowVisible ? L"隐藏图片" : L"显示图片");
+    AppendMenuW(hMenu, MF_STRING, IDM_RELOAD, L"重新加载");
+    AppendMenuW(hMenu, MF_STRING, IDM_SETTINGS, L"设置");
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenu, MF_STRING, IDM_EXIT, L"退出");
 
     POINT pt;
     GetCursorPos(&pt);
@@ -273,22 +273,22 @@ void CreateSettingsWindow() {
         return;
     }
 
-    const char SETTINGS_CLASS[] = "GuessDraw_Settings";
+    const wchar_t SETTINGS_CLASS[] = L"GuessDraw_Settings";
     static bool registered = false;
     if (!registered) {
-        WNDCLASS wc = {};
+        WNDCLASSW wc = {};
         wc.lpfnWndProc = SettingsProc;
         wc.hInstance = g_hInstance;
         wc.lpszClassName = SETTINGS_CLASS;
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-        RegisterClass(&wc);
+        RegisterClassW(&wc);
         registered = true;
     }
 
-    g_hwndSettings = CreateWindowEx(
+    g_hwndSettings = CreateWindowExW(
         WS_EX_TOOLWINDOW,
-        SETTINGS_CLASS, "GuessDraw 设置",
+        SETTINGS_CLASS, L"GuessDraw 设置",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
         CW_USEDEFAULT, CW_USEDEFAULT, 420, 380,
         nullptr, nullptr, g_hInstance, nullptr
@@ -308,63 +308,63 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         int labelW = 90, ctrlX = 100, ctrlW = 280;
 
         // 透明度
-        CreateWindow("STATIC", "透明度:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
-        hSliderOpacity = CreateWindow(TRACKBAR_CLASS, "", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
+        CreateWindowW(L"STATIC", L"透明度:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        hSliderOpacity = CreateWindowW(L"msctls_trackbar32", L"", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
             ctrlX, y, 220, 30, hwnd, (HMENU)IDC_SLIDER_OPACITY, g_hInstance, nullptr);
         SendMessage(hSliderOpacity, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
         SendMessage(hSliderOpacity, TBM_SETPOS, TRUE, (int)(opacityFactor * 100));
-        hLabelOpacity = CreateWindow("STATIC", "", WS_CHILD | WS_VISIBLE, 330, y + 2, 60, 20, hwnd, (HMENU)IDC_LABEL_OPACITY, g_hInstance, nullptr);
-        char buf[32];
-        sprintf(buf, "%d%%", (int)(opacityFactor * 100));
-        SetWindowText(hLabelOpacity, buf);
+        hLabelOpacity = CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE, 330, y + 2, 60, 20, hwnd, (HMENU)IDC_LABEL_OPACITY, g_hInstance, nullptr);
+        wchar_t buf[32];
+        swprintf(buf, 32, L"%d%%", (int)(opacityFactor * 100));
+        SetWindowTextW(hLabelOpacity, buf);
 
         y += 40;
         // 缩放
-        CreateWindow("STATIC", "缩放:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
-        hSliderScale = CreateWindow(TRACKBAR_CLASS, "", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
+        CreateWindowW(L"STATIC", L"缩放:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        hSliderScale = CreateWindowW(L"msctls_trackbar32", L"", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
             ctrlX, y, 220, 30, hwnd, (HMENU)IDC_SLIDER_SCALE, g_hInstance, nullptr);
         SendMessage(hSliderScale, TBM_SETRANGE, TRUE, MAKELPARAM(10, 300));
         SendMessage(hSliderScale, TBM_SETPOS, TRUE, (int)(scaleFactor * 100));
-        hLabelScale = CreateWindow("STATIC", "", WS_CHILD | WS_VISIBLE, 330, y + 2, 60, 20, hwnd, (HMENU)IDC_LABEL_SCALE, g_hInstance, nullptr);
-        sprintf(buf, "%d%%", (int)(scaleFactor * 100));
-        SetWindowText(hLabelScale, buf);
+        hLabelScale = CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE, 330, y + 2, 60, 20, hwnd, (HMENU)IDC_LABEL_SCALE, g_hInstance, nullptr);
+        swprintf(buf, 32, L"%d%%", (int)(scaleFactor * 100));
+        SetWindowTextW(hLabelScale, buf);
 
         y += 45;
         // 黑白化
-        hCheckGray = CreateWindow("BUTTON", "黑白化", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+        hCheckGray = CreateWindowW(L"BUTTON", L"黑白化", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
             10, y, 120, 25, hwnd, (HMENU)IDC_CHECK_GRAYSCALE, g_hInstance, nullptr);
         if (grayscaleEnabled) SendMessage(hCheckGray, BM_SETCHECK, BST_CHECKED, 0);
 
         // 去白底
-        hCheckWhite = CreateWindow("BUTTON", "去白色底", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+        hCheckWhite = CreateWindowW(L"BUTTON", L"去白色底", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
             150, y, 120, 25, hwnd, (HMENU)IDC_CHECK_REMOVEWHITE, g_hInstance, nullptr);
         if (removeWhiteBg) SendMessage(hCheckWhite, BM_SETCHECK, BST_CHECKED, 0);
 
         y += 35;
         // 自动加载最新
-        hCheckAuto = CreateWindow("BUTTON", "自动加载目录最新图片", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+        hCheckAuto = CreateWindowW(L"BUTTON", L"自动加载目录最新图片", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
             10, y, 250, 25, hwnd, (HMENU)IDC_CHECK_AUTOLOAD, g_hInstance, nullptr);
         if (autoLoadLatest) SendMessage(hCheckAuto, BM_SETCHECK, BST_CHECKED, 0);
 
         y += 35;
         // 图片目录
-        CreateWindow("STATIC", "图片目录:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        CreateWindowW(L"STATIC", L"图片目录:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
         hEditPath = CreateWindowW(L"EDIT", imageDirectory.c_str(),
             WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
             ctrlX, y, 220, 24, hwnd, (HMENU)IDC_EDIT_PATH, g_hInstance, nullptr);
-        hBtnBrowse = CreateWindow("BUTTON", "...", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        hBtnBrowse = CreateWindowW(L"BUTTON", L"...", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             330, y, 40, 24, hwnd, (HMENU)IDC_BTN_BROWSE, g_hInstance, nullptr);
 
         y += 35;
         // 当前图片路径（只读显示）
-        CreateWindow("STATIC", "当前图片:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        CreateWindowW(L"STATIC", L"当前图片:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
         HWND hCurPath = CreateWindowW(L"EDIT", currentImagePath.c_str(),
             WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_READONLY,
             ctrlX, y, 290, 24, hwnd, nullptr, g_hInstance, nullptr);
 
         y += 45;
         // 应用按钮
-        hBtnApply = CreateWindow("BUTTON", "应用并刷新", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        hBtnApply = CreateWindowW(L"BUTTON", L"应用并刷新", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             150, y, 120, 30, hwnd, (HMENU)IDC_BTN_APPLY, g_hInstance, nullptr);
 
         return 0;
@@ -374,16 +374,16 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         if ((HWND)lParam == GetDlgItem(hwnd, IDC_SLIDER_OPACITY)) {
             int val = (int)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
             opacityFactor = val / 100.0f;
-            char buf[32];
-            sprintf(buf, "%d%%", val);
-            SetWindowText(GetDlgItem(hwnd, IDC_LABEL_OPACITY), buf);
+            wchar_t buf[32];
+            swprintf(buf, 32, L"%d%%", val);
+            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_OPACITY), buf);
         }
         if ((HWND)lParam == GetDlgItem(hwnd, IDC_SLIDER_SCALE)) {
             int val = (int)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
             scaleFactor = val / 100.0f;
-            char buf[32];
-            sprintf(buf, "%d%%", val);
-            SetWindowText(GetDlgItem(hwnd, IDC_LABEL_SCALE), buf);
+            wchar_t buf[32];
+            swprintf(buf, 32, L"%d%%", val);
+            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_SCALE), buf);
         }
         return 0;
     }
@@ -601,20 +601,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
     // 注册主窗口类
-    const char CLASS_NAME[] = "GuessDraw_Main";
-    WNDCLASS wc = {};
+    const wchar_t CLASS_NAME[] = L"GuessDraw_Main";
+    WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-    RegisterClass(&wc);
+    RegisterClassW(&wc);
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    g_hwndMain = CreateWindowEx(
+    g_hwndMain = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT,
         CLASS_NAME,
-        "GuessDraw",
+        L"GuessDraw",
         WS_POPUP,
         0, 0, screenWidth, screenHeight,
         nullptr, nullptr, hInstance, nullptr
