@@ -19,6 +19,7 @@ add_executable(GuessDraw
         src/ui/tray.cpp
         src/ui/settings.cpp
         src/ui/hotkeys.cpp
+        res/app.rc
 )
 
 target_link_libraries(GuessDraw gdiplus comctl32 shell32 ole32)

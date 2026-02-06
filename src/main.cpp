@@ -106,6 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
     RegisterClassW(&wc);
 
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);

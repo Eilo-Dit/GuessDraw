@@ -7,7 +7,7 @@ void CreateTrayIcon(HWND hwnd) {
     g_nid.uID = 1;
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_TRAYICON;
-    g_nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    g_nid.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_APPICON));
     wcscpy(g_nid.szTip, L"GuessDraw");
     Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
