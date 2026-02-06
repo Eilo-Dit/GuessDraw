@@ -12,6 +12,33 @@
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "shell32.lib")
 
+// ============ 快捷键配置 ============
+enum HotkeyAction {
+    HK_EXIT = 0,
+    HK_TOGGLE_VISIBLE,
+    HK_RELOAD,
+    HK_OPACITY_UP,
+    HK_OPACITY_DOWN,
+    HK_SCALE_UP,
+    HK_SCALE_DOWN,
+    HK_DRAG_MODIFIER,   // 拖动修饰键
+    HK_COUNT
+};
+
+struct HotkeyBinding {
+    int vkey;       // 主键 VK 码
+    bool ctrl;      // 是否需要 Ctrl
+    bool shift;     // 是否需要 Shift
+    bool alt;       // 是否需要 Alt
+};
+
+extern HotkeyBinding g_hotkeys[HK_COUNT];
+
+// 快捷键名称（用于设置面板显示）
+const wchar_t* GetHotkeyActionName(int action);
+// 将 VK 码转为可读字符串
+std::wstring VKeyToString(const HotkeyBinding& hk);
+
 // ============ 全局状态 ============
 extern std::atomic<bool> running;
 extern std::atomic<bool> isWindowVisible;
@@ -50,3 +77,6 @@ extern NOTIFYICONDATAW g_nid;
 #define IDC_LABEL_OPACITY     2008
 #define IDC_LABEL_SCALE       2009
 #define IDC_BTN_APPLY         2010
+
+// 快捷键编辑控件 ID（基址 3001，每个动作一个）
+#define IDC_HOTKEY_BASE       3001

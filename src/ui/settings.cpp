@@ -1,6 +1,70 @@
 #include "settings.h"
 #include "globals.h"
 
+// 临时快捷键配置（编辑中，应用时写入 g_hotkeys）
+static HotkeyBinding s_tempHotkeys[HK_COUNT];
+static HWND s_hkEdits[HK_COUNT] = {};
+static WNDPROC s_origEditProc = nullptr;
+
+// 子类化 EDIT 控件，捕获按键设置快捷键
+static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) {
+        int vkey = (int)wParam;
+        // 忽略单独的修饰键（作为组合键的一部分）
+        if (vkey == VK_CONTROL || vkey == VK_SHIFT || vkey == VK_MENU ||
+            vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
+            vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
+            vkey == VK_LMENU || vkey == VK_RMENU) {
+            return 0;
+        }
+
+        // 找到是哪个 hotkey edit
+        int idx = -1;
+        for (int i = 0; i < HK_COUNT; i++) {
+            if (s_hkEdits[i] == hwnd) { idx = i; break; }
+        }
+        if (idx < 0) return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
+
+        // 拖动修饰键特殊处理：只接受修饰键本身
+        // 其他快捷键：记录主键 + 修饰状态
+        s_tempHotkeys[idx].vkey = vkey;
+        s_tempHotkeys[idx].ctrl  = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        s_tempHotkeys[idx].shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+        s_tempHotkeys[idx].alt   = (GetKeyState(VK_MENU) & 0x8000) != 0;
+
+        // 更新显示
+        std::wstring text = VKeyToString(s_tempHotkeys[idx]);
+        SetWindowTextW(hwnd, text.c_str());
+        return 0;
+    }
+
+    // 拖动修饰键：允许直接按修饰键
+    if (uMsg == WM_KEYUP || uMsg == WM_SYSKEYUP) {
+        int vkey = (int)wParam;
+        if (vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
+            vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
+            vkey == VK_LMENU || vkey == VK_RMENU) {
+            int idx = -1;
+            for (int i = 0; i < HK_COUNT; i++) {
+                if (s_hkEdits[i] == hwnd) { idx = i; break; }
+            }
+            if (idx == HK_DRAG_MODIFIER) {
+                s_tempHotkeys[idx].vkey = vkey;
+                s_tempHotkeys[idx].ctrl = false;
+                s_tempHotkeys[idx].shift = false;
+                s_tempHotkeys[idx].alt = false;
+                std::wstring text = VKeyToString(s_tempHotkeys[idx]);
+                SetWindowTextW(hwnd, text.c_str());
+                return 0;
+            }
+        }
+    }
+
+    if (uMsg == WM_CHAR || uMsg == WM_SYSCHAR) return 0;
+
+    return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
+}
+
 void CreateSettingsWindow() {
     if (g_hwndSettings && IsWindow(g_hwndSettings)) {
         SetForegroundWindow(g_hwndSettings);
@@ -20,11 +84,16 @@ void CreateSettingsWindow() {
         registered = true;
     }
 
+    // 初始化临时快捷键为当前配置
+    for (int i = 0; i < HK_COUNT; i++) {
+        s_tempHotkeys[i] = g_hotkeys[i];
+    }
+
     g_hwndSettings = CreateWindowExW(
         WS_EX_TOOLWINDOW,
         SETTINGS_CLASS, L"GuessDraw 设置",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 420, 380,
+        CW_USEDEFAULT, CW_USEDEFAULT, 420, 620,
         nullptr, nullptr, g_hInstance, nullptr
     );
 
@@ -41,8 +110,13 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         int y = 15;
         int labelW = 90, ctrlX = 100;
 
+        // ---- 图片设置区域 ----
+        CreateWindowW(L"BUTTON", L" 图片设置 ", WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            5, y - 5, 400, 225, hwnd, nullptr, g_hInstance, nullptr);
+        y += 15;
+
         // 透明度
-        CreateWindowW(L"STATIC", L"透明度:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        CreateWindowW(L"STATIC", L"透明度:", WS_CHILD | WS_VISIBLE, 15, y + 2, 75, 20, hwnd, nullptr, g_hInstance, nullptr);
         hSliderOpacity = CreateWindowW(L"msctls_trackbar32", L"", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
             ctrlX, y, 220, 30, hwnd, (HMENU)IDC_SLIDER_OPACITY, g_hInstance, nullptr);
         SendMessage(hSliderOpacity, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
@@ -52,9 +126,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         swprintf(buf, 32, L"%d%%", (int)(opacityFactor * 100));
         SetWindowTextW(hLabelOpacity, buf);
 
-        y += 40;
+        y += 35;
         // 缩放
-        CreateWindowW(L"STATIC", L"缩放:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        CreateWindowW(L"STATIC", L"缩放:", WS_CHILD | WS_VISIBLE, 15, y + 2, 75, 20, hwnd, nullptr, g_hInstance, nullptr);
         hSliderScale = CreateWindowW(L"msctls_trackbar32", L"", WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS,
             ctrlX, y, 220, 30, hwnd, (HMENU)IDC_SLIDER_SCALE, g_hInstance, nullptr);
         SendMessage(hSliderScale, TBM_SETRANGE, TRUE, MAKELPARAM(10, 300));
@@ -63,41 +137,57 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         swprintf(buf, 32, L"%d%%", (int)(scaleFactor * 100));
         SetWindowTextW(hLabelScale, buf);
 
-        y += 45;
-        // 黑白化
+        y += 40;
+        // 黑白化 + 去白底
         hCheckGray = CreateWindowW(L"BUTTON", L"黑白化", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
-            10, y, 120, 25, hwnd, (HMENU)IDC_CHECK_GRAYSCALE, g_hInstance, nullptr);
+            15, y, 120, 25, hwnd, (HMENU)IDC_CHECK_GRAYSCALE, g_hInstance, nullptr);
         if (grayscaleEnabled) SendMessage(hCheckGray, BM_SETCHECK, BST_CHECKED, 0);
-
-        // 去白底
         hCheckWhite = CreateWindowW(L"BUTTON", L"去白色底", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
             150, y, 120, 25, hwnd, (HMENU)IDC_CHECK_REMOVEWHITE, g_hInstance, nullptr);
         if (removeWhiteBg) SendMessage(hCheckWhite, BM_SETCHECK, BST_CHECKED, 0);
 
-        y += 35;
-        // 自动加载最新
+        y += 30;
+        // 自动加载
         hCheckAuto = CreateWindowW(L"BUTTON", L"自动加载目录最新图片", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
-            10, y, 250, 25, hwnd, (HMENU)IDC_CHECK_AUTOLOAD, g_hInstance, nullptr);
+            15, y, 250, 25, hwnd, (HMENU)IDC_CHECK_AUTOLOAD, g_hInstance, nullptr);
         if (autoLoadLatest) SendMessage(hCheckAuto, BM_SETCHECK, BST_CHECKED, 0);
 
-        y += 35;
+        y += 30;
         // 图片目录
-        CreateWindowW(L"STATIC", L"图片目录:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
+        CreateWindowW(L"STATIC", L"图片目录:", WS_CHILD | WS_VISIBLE, 15, y + 2, 75, 20, hwnd, nullptr, g_hInstance, nullptr);
         hEditPath = CreateWindowW(L"EDIT", imageDirectory.c_str(),
             WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
             ctrlX, y, 220, 24, hwnd, (HMENU)IDC_EDIT_PATH, g_hInstance, nullptr);
         hBtnBrowse = CreateWindowW(L"BUTTON", L"...", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             330, y, 40, 24, hwnd, (HMENU)IDC_BTN_BROWSE, g_hInstance, nullptr);
 
-        y += 35;
-        // 当前图片路径（只读显示）
-        CreateWindowW(L"STATIC", L"当前图片:", WS_CHILD | WS_VISIBLE, 10, y + 2, labelW, 20, hwnd, nullptr, g_hInstance, nullptr);
-        CreateWindowW(L"EDIT", currentImagePath.c_str(),
-            WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_READONLY,
-            ctrlX, y, 290, 24, hwnd, nullptr, g_hInstance, nullptr);
-
+        // ---- 快捷键设置区域 ----
         y += 45;
-        // 应用按钮
+        CreateWindowW(L"BUTTON", L" 快捷键设置（点击输入框后按键修改） ", WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            5, y - 5, 400, (int)(HK_COUNT * 28 + 30), hwnd, nullptr, g_hInstance, nullptr);
+        y += 15;
+
+        for (int i = 0; i < HK_COUNT; i++) {
+            const wchar_t* name = GetHotkeyActionName(i);
+            CreateWindowW(L"STATIC", name, WS_CHILD | WS_VISIBLE, 15, y + 2, 110, 20, hwnd, nullptr, g_hInstance, nullptr);
+
+            std::wstring keyText = VKeyToString(s_tempHotkeys[i]);
+            s_hkEdits[i] = CreateWindowW(L"EDIT", keyText.c_str(),
+                WS_CHILD | WS_VISIBLE | WS_BORDER | ES_CENTER | ES_READONLY,
+                130, y, 160, 24, hwnd, (HMENU)(IDC_HOTKEY_BASE + i), g_hInstance, nullptr);
+
+            // 子类化 EDIT 控件以捕获按键
+            if (!s_origEditProc) {
+                s_origEditProc = (WNDPROC)SetWindowLongPtrW(s_hkEdits[i], GWLP_WNDPROC, (LONG_PTR)HotkeyEditProc);
+            } else {
+                SetWindowLongPtrW(s_hkEdits[i], GWLP_WNDPROC, (LONG_PTR)HotkeyEditProc);
+            }
+
+            y += 28;
+        }
+
+        // ---- 应用按钮 ----
+        y += 15;
         hBtnApply = CreateWindowW(L"BUTTON", L"应用并刷新", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             150, y, 120, 30, hwnd, (HMENU)IDC_BTN_APPLY, g_hInstance, nullptr);
 
@@ -139,6 +229,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             }
         }
         if (wmId == IDC_BTN_APPLY) {
+            // 应用图片设置
             grayscaleEnabled = (SendMessage(GetDlgItem(hwnd, IDC_CHECK_GRAYSCALE), BM_GETCHECK, 0, 0) == BST_CHECKED);
             removeWhiteBg = (SendMessage(GetDlgItem(hwnd, IDC_CHECK_REMOVEWHITE), BM_GETCHECK, 0, 0) == BST_CHECKED);
             autoLoadLatest = (SendMessage(GetDlgItem(hwnd, IDC_CHECK_AUTOLOAD), BM_GETCHECK, 0, 0) == BST_CHECKED);
@@ -146,6 +237,11 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             wchar_t pathBuf[MAX_PATH];
             GetWindowTextW(GetDlgItem(hwnd, IDC_EDIT_PATH), pathBuf, MAX_PATH);
             imageDirectory = pathBuf;
+
+            // 应用快捷键设置
+            for (int i = 0; i < HK_COUNT; i++) {
+                g_hotkeys[i] = s_tempHotkeys[i];
+            }
 
             reloadImage = true;
             PostMessage(g_hwndMain, WM_PAINT, 0, 0);
