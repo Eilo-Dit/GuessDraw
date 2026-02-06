@@ -38,14 +38,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_TRAYICON:
         if (lParam == WM_RBUTTONUP) {
             ShowTrayMenu(hwnd);
-        } else if (lParam == WM_LBUTTONDBLCLK) {
-            if (isWindowVisible) {
-                ShowWindow(hwnd, SW_HIDE);
-                isWindowVisible = false;
-            } else {
-                ShowWindow(hwnd, SW_SHOW);
-                isWindowVisible = true;
-            }
+        } else if (lParam == WM_LBUTTONUP) {
+            CreateSettingsWindow();
         }
         return 0;
 
