@@ -10,18 +10,14 @@ if(MINGW)
     add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 endif()
 
-add_executable(GuessDraw main.cpp)
+include_directories(src/core src/ui)
+
+add_executable(GuessDraw
+        src/main.cpp
+        src/core/drawing.cpp
+        src/ui/tray.cpp
+        src/ui/settings.cpp
+        src/ui/hotkeys.cpp
+)
 
 target_link_libraries(GuessDraw gdiplus comctl32 shell32 ole32)
-
-
-#[[
-窗口可以自由拖动   ctrl+鼠标
-
-可以动态切换图片(指定路径下最新时间的)
-
-隐藏窗口和图片，方便查看实际效果
-
-调整图片 透明度，黑白化，去白色底
-
-]]
