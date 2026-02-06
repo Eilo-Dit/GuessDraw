@@ -174,7 +174,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             std::wstring keyText = VKeyToString(s_tempHotkeys[i]);
             s_hkEdits[i] = CreateWindowW(L"EDIT", keyText.c_str(),
                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_CENTER | ES_READONLY,
-                130, y, 160, 24, hwnd, (HMENU)(IDC_HOTKEY_BASE + i), g_hInstance, nullptr);
+                130, y, 160, 24, hwnd, (HMENU)(INT_PTR)(IDC_HOTKEY_BASE + i), g_hInstance, nullptr);
 
             // 子类化 EDIT 控件以捕获按键
             if (!s_origEditProc) {
@@ -242,6 +242,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             for (int i = 0; i < HK_COUNT; i++) {
                 g_hotkeys[i] = s_tempHotkeys[i];
             }
+
+            // 保存配置到文件
+            SaveConfig();
 
             reloadImage = true;
             PostMessage(g_hwndMain, WM_PAINT, 0, 0);

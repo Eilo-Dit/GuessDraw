@@ -28,79 +28,6 @@ HWND g_hwndSettings = nullptr;
 HINSTANCE g_hInstance = nullptr;
 NOTIFYICONDATAW g_nid = {};
 
-// ============ 快捷键默认配置 ============
-HotkeyBinding g_hotkeys[HK_COUNT] = {
-    { VK_DELETE,  false, false, false },  // HK_EXIT
-    { VK_NUMPAD0, false, false, false },  // HK_TOGGLE_VISIBLE
-    { VK_DECIMAL, false, false, false },  // HK_RELOAD
-    { VK_NUMPAD8, false, false, false },  // HK_OPACITY_UP
-    { VK_NUMPAD2, false, false, false },  // HK_OPACITY_DOWN
-    { VK_UP,      false, false, false },  // HK_SCALE_UP
-    { VK_DOWN,    false, false, false },  // HK_SCALE_DOWN
-    { VK_LCONTROL,false, false, false },  // HK_DRAG_MODIFIER
-};
-
-const wchar_t* GetHotkeyActionName(int action) {
-    static const wchar_t* names[] = {
-        L"退出程序",
-        L"显示/隐藏",
-        L"重新加载",
-        L"提高透明度",
-        L"降低透明度",
-        L"放大图片",
-        L"缩小图片",
-        L"拖动修饰键",
-    };
-    if (action >= 0 && action < HK_COUNT) return names[action];
-    return L"未知";
-}
-
-std::wstring VKeyToString(const HotkeyBinding& hk) {
-    std::wstring result;
-    if (hk.ctrl)  result += L"Ctrl+";
-    if (hk.shift) result += L"Shift+";
-    if (hk.alt)   result += L"Alt+";
-
-    // 获取按键名称
-    UINT scanCode = MapVirtualKeyW(hk.vkey, MAPVK_VK_TO_VSC);
-    wchar_t keyName[64] = {};
-
-    // 特殊键需要扩展标志
-    bool extended = (hk.vkey == VK_UP || hk.vkey == VK_DOWN || hk.vkey == VK_LEFT || hk.vkey == VK_RIGHT ||
-                     hk.vkey == VK_DELETE || hk.vkey == VK_INSERT || hk.vkey == VK_HOME || hk.vkey == VK_END ||
-                     hk.vkey == VK_PRIOR || hk.vkey == VK_NEXT);
-    if (extended) scanCode |= 0x100;
-
-    if (GetKeyNameTextW(scanCode << 16, keyName, 64) > 0) {
-        result += keyName;
-    } else {
-        // 手动处理一些常见键
-        switch (hk.vkey) {
-            case VK_LCONTROL: result += L"LCtrl"; break;
-            case VK_RCONTROL: result += L"RCtrl"; break;
-            case VK_LSHIFT:   result += L"LShift"; break;
-            case VK_LMENU:    result += L"LAlt"; break;
-            case VK_NUMPAD0:  result += L"Num0"; break;
-            case VK_NUMPAD1:  result += L"Num1"; break;
-            case VK_NUMPAD2:  result += L"Num2"; break;
-            case VK_NUMPAD3:  result += L"Num3"; break;
-            case VK_NUMPAD4:  result += L"Num4"; break;
-            case VK_NUMPAD5:  result += L"Num5"; break;
-            case VK_NUMPAD6:  result += L"Num6"; break;
-            case VK_NUMPAD7:  result += L"Num7"; break;
-            case VK_NUMPAD8:  result += L"Num8"; break;
-            case VK_NUMPAD9:  result += L"Num9"; break;
-            case VK_DECIMAL:  result += L"Num."; break;
-            default: {
-                wchar_t tmp[16];
-                swprintf(tmp, 16, L"VK_%d", hk.vkey);
-                result += tmp;
-            }
-        }
-    }
-    return result;
-}
-
 // ============ 主窗口消息处理 ============
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -164,6 +91,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 // ============ 主函数 ============
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     g_hInstance = hInstance;
+
+    LoadConfig();
 
     INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_BAR_CLASSES };
     InitCommonControlsEx(&icex);

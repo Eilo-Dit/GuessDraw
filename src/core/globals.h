@@ -80,3 +80,9 @@ extern NOTIFYICONDATAW g_nid;
 
 // 快捷键编辑控件 ID（基址 3001，每个动作一个）
 #define IDC_HOTKEY_BASE       3001
+
+// ============ 配置持久化 ============
+#define CONFIG_PATH L"C:\\GuessDraw.ini"
+
+void LoadConfig();
+void SaveConfig();

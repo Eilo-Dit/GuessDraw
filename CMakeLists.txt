@@ -15,6 +15,7 @@ include_directories(src/core src/ui)
 add_executable(GuessDraw
         src/main.cpp
         src/core/drawing.cpp
+        src/core/config.cpp
         src/ui/tray.cpp
         src/ui/settings.cpp
         src/ui/hotkeys.cpp
