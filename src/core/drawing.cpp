@@ -32,6 +32,8 @@ std::wstring FindLatestImage(const std::wstring& dir) {
     return latestFile;
 }
 
+static bool s_manualSwitch = false;
+
 void SwitchImage(int direction) {
     std::vector<std::wstring> images;
     try {
@@ -65,10 +67,13 @@ void SwitchImage(int direction) {
         if (newIdx >= (int)images.size()) newIdx = 0;
     }
     currentImagePath = images[newIdx];
+    s_manualSwitch = true;
 }
 
 void DrawTransparentWindow(HWND hwnd) {
-    if (autoLoadLatest) {
+    if (s_manualSwitch) {
+        s_manualSwitch = false;
+    } else if (autoLoadLatest) {
         std::wstring latest = FindLatestImage(imageDirectory);
         if (!latest.empty()) {
             currentImagePath = latest;

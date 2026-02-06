@@ -75,6 +75,19 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 }
 
 // ============ 配置读写 ============
+const wchar_t* GetConfigPath() {
+    static wchar_t path[MAX_PATH] = {};
+    if (path[0] == L'\0') {
+        wchar_t appdata[MAX_PATH];
+        if (GetEnvironmentVariableW(L"APPDATA", appdata, MAX_PATH) > 0) {
+            swprintf(path, MAX_PATH, L"%s\\GuessDraw.ini", appdata);
+        } else {
+            wcscpy(path, L"C:\\GuessDraw.ini");
+        }
+    }
+    return path;
+}
+
 static const wchar_t* s_hotkeyKeys[] = {
     L"Exit", L"ToggleVisible", L"Reload",
     L"OpacityUp", L"OpacityDown",
@@ -84,28 +97,28 @@ static const wchar_t* s_hotkeyKeys[] = {
 
 void LoadConfig() {
     // 如果配置文件不存在，使用默认值
-    if (GetFileAttributesW(CONFIG_PATH) == INVALID_FILE_ATTRIBUTES) return;
+    if (GetFileAttributesW(GetConfigPath()) == INVALID_FILE_ATTRIBUTES) return;
 
     wchar_t buf[MAX_PATH];
 
     // [Image]
-    GetPrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), buf, MAX_PATH, CONFIG_PATH);
+    GetPrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), buf, MAX_PATH, GetConfigPath());
     imageDirectory = buf;
-    GetPrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), buf, MAX_PATH, CONFIG_PATH);
+    GetPrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), buf, MAX_PATH, GetConfigPath());
     currentImagePath = buf;
 
-    opacityFactor = GetPrivateProfileIntW(L"Image", L"Opacity", 50, CONFIG_PATH) / 100.0f;
-    scaleFactor   = GetPrivateProfileIntW(L"Image", L"Scale", 100, CONFIG_PATH) / 100.0f;
-    grayscaleEnabled = GetPrivateProfileIntW(L"Image", L"Grayscale", 0, CONFIG_PATH) != 0;
-    removeWhiteBg    = GetPrivateProfileIntW(L"Image", L"RemoveWhite", 0, CONFIG_PATH) != 0;
-    autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 0, CONFIG_PATH) != 0;
+    opacityFactor = GetPrivateProfileIntW(L"Image", L"Opacity", 50, GetConfigPath()) / 100.0f;
+    scaleFactor   = GetPrivateProfileIntW(L"Image", L"Scale", 100, GetConfigPath()) / 100.0f;
+    grayscaleEnabled = GetPrivateProfileIntW(L"Image", L"Grayscale", 0, GetConfigPath()) != 0;
+    removeWhiteBg    = GetPrivateProfileIntW(L"Image", L"RemoveWhite", 0, GetConfigPath()) != 0;
+    autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 0, GetConfigPath()) != 0;
 
     // [Hotkeys]
     for (int i = 0; i < HK_COUNT; i++) {
-        g_hotkeys[i].vkey  = GetPrivateProfileIntW(L"Hotkeys", s_hotkeyKeys[i], g_hotkeys[i].vkey, CONFIG_PATH);
+        g_hotkeys[i].vkey  = GetPrivateProfileIntW(L"Hotkeys", s_hotkeyKeys[i], g_hotkeys[i].vkey, GetConfigPath());
         wchar_t modKey[64];
         swprintf(modKey, 64, L"%s_Mod", s_hotkeyKeys[i]);
-        int mod = GetPrivateProfileIntW(L"Hotkeys", modKey, 0, CONFIG_PATH);
+        int mod = GetPrivateProfileIntW(L"Hotkeys", modKey, 0, GetConfigPath());
         g_hotkeys[i].ctrl  = (mod & 1) != 0;
         g_hotkeys[i].shift = (mod & 2) != 0;
         g_hotkeys[i].alt   = (mod & 4) != 0;
@@ -116,29 +129,29 @@ void SaveConfig() {
     wchar_t buf[MAX_PATH];
 
     // [Image]
-    WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), CONFIG_PATH);
-    WritePrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), GetConfigPath());
+    WritePrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), GetConfigPath());
 
     swprintf(buf, MAX_PATH, L"%d", (int)(opacityFactor * 100));
-    WritePrivateProfileStringW(L"Image", L"Opacity", buf, CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"Opacity", buf, GetConfigPath());
     swprintf(buf, MAX_PATH, L"%d", (int)(scaleFactor * 100));
-    WritePrivateProfileStringW(L"Image", L"Scale", buf, CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"Scale", buf, GetConfigPath());
     swprintf(buf, MAX_PATH, L"%d", (int)grayscaleEnabled.load());
-    WritePrivateProfileStringW(L"Image", L"Grayscale", buf, CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"Grayscale", buf, GetConfigPath());
     swprintf(buf, MAX_PATH, L"%d", (int)removeWhiteBg.load());
-    WritePrivateProfileStringW(L"Image", L"RemoveWhite", buf, CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"RemoveWhite", buf, GetConfigPath());
     swprintf(buf, MAX_PATH, L"%d", (int)autoLoadLatest.load());
-    WritePrivateProfileStringW(L"Image", L"AutoLoad", buf, CONFIG_PATH);
+    WritePrivateProfileStringW(L"Image", L"AutoLoad", buf, GetConfigPath());
 
     // [Hotkeys]
     for (int i = 0; i < HK_COUNT; i++) {
         swprintf(buf, MAX_PATH, L"%d", g_hotkeys[i].vkey);
-        WritePrivateProfileStringW(L"Hotkeys", s_hotkeyKeys[i], buf, CONFIG_PATH);
+        WritePrivateProfileStringW(L"Hotkeys", s_hotkeyKeys[i], buf, GetConfigPath());
 
         wchar_t modKey[64];
         swprintf(modKey, 64, L"%s_Mod", s_hotkeyKeys[i]);
         int mod = (g_hotkeys[i].ctrl ? 1 : 0) | (g_hotkeys[i].shift ? 2 : 0) | (g_hotkeys[i].alt ? 4 : 0);
         swprintf(buf, MAX_PATH, L"%d", mod);
-        WritePrivateProfileStringW(L"Hotkeys", modKey, buf, CONFIG_PATH);
+        WritePrivateProfileStringW(L"Hotkeys", modKey, buf, GetConfigPath());
     }
 }

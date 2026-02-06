@@ -87,7 +87,7 @@ extern NOTIFYICONDATAW g_nid;
 #define IDI_APPICON 101
 
 // ============ 配置持久化 ============
-#define CONFIG_PATH L"C:\\GuessDraw.ini"
+const wchar_t* GetConfigPath();
 
 void LoadConfig();
 void SaveConfig();
