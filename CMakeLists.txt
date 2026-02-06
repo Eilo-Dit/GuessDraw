@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
 
 add_executable(GuessDraw main.cpp)
 
-target_link_libraries(GuessDraw gdiplus)
+target_link_libraries(GuessDraw gdiplus comctl32 shell32 ole32)
 
 
 #[[
