@@ -74,15 +74,15 @@ void KeyListener(HWND hwnd) {
         // 上一张图片
         if (IsHotkeyPressed(g_hotkeys[HK_PREV_IMAGE])) {
             SwitchImage(-1);
-            PostMessage(hwnd, WM_PAINT, 0, 0);
-            Sleep(200);
+            DrawTransparentWindow(hwnd);
+            Sleep(50);
         }
 
         // 下一张图片
         if (IsHotkeyPressed(g_hotkeys[HK_NEXT_IMAGE])) {
             SwitchImage(1);
-            PostMessage(hwnd, WM_PAINT, 0, 0);
-            Sleep(200);
+            DrawTransparentWindow(hwnd);
+            Sleep(50);
         }
 
         // 拖动修饰键 + 鼠标左键
