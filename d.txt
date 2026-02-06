@@ -1,0 +1,206 @@
+#include <windows.h>
+#include <gdiplus.h>
+#include <thread>
+#include <atomic>
+#include <iostream>
+
+#pragma comment(lib, "gdiplus.lib")
+
+using namespace Gdiplus;
+using namespace std;
+
+// 线程停止标志
+std::atomic<bool> running(true);
+std::atomic<bool> isWindowVisible(true); // 窗口显示状态
+std::wstring currentImagePath = L"C:\\Users\\Eilo\\Pictures\\zGuess\\1.jpg"; // 当前图片路径
+std::atomic<bool> reloadImage(false); // 标志是否需要重新加载图片
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+// 全局按键监听线程
+void KeyListener(HWND hwnd) {
+    while (running) {
+        if (GetAsyncKeyState(VK_DOWN) & 0x8000) { // 按下方向键“下”
+            PostMessage(hwnd, WM_DESTROY, 0, 0);  // 发送关闭消息
+            break;
+        }
+
+        if (GetAsyncKeyState(VK_RIGHT) & 0x8000) { // 按下方向键“右”
+            // 隐藏或显示窗口
+            if (isWindowVisible) {
+                ShowWindow(hwnd, SW_HIDE);
+                isWindowVisible = false;
+            } else {
+                ShowWindow(hwnd, SW_SHOW);
+                isWindowVisible = true;
+            }
+            Sleep(200); // 防止反复触发
+        }
+
+        if (GetAsyncKeyState(VK_NUMPAD0) & 0x8000) { // 按下小键盘“0”
+            reloadImage = true; // 设置重新加载图片标志
+            InvalidateRect(hwnd, nullptr, TRUE); // 触发窗口重绘
+            Sleep(200); // 防止反复触发
+        }
+
+        Sleep(10); // 减少 CPU 占用
+    }
+}
+
+// 绘制图片到透明窗口
+void DrawTransparentWindow(HWND hwnd) {
+    // 获取窗口设备上下文
+    HDC hdcScreen = GetDC(nullptr);
+    HDC hdcMem = CreateCompatibleDC(hdcScreen);
+
+    // 创建兼容位图
+    RECT rect;
+    GetClientRect(hwnd, &rect);
+    int windowWidth = rect.right - rect.left;
+    int windowHeight = rect.bottom - rect.top;
+    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, windowWidth, windowHeight);
+
+    // 选择位图到内存 DC
+    HBITMAP hOldBitmap = (HBITMAP)SelectObject(hdcMem, hBitmap);
+
+    // 使用 GDI+ 绘制图片
+    Graphics graphics(hdcMem);
+    graphics.Clear(Color(0, 0, 0, 0)); // 清空背景，完全透明
+
+    // 加载图片并设置透明度
+    Image image(currentImagePath.c_str()); // 动态加载图片
+    UINT imgWidth = image.GetWidth();
+    UINT imgHeight = image.GetHeight();
+
+    // 获取屏幕分辨率
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // 计算屏幕一半大小
+    int targetWidth = screenWidth / 2;
+    int targetHeight = screenHeight / 2;
+
+    // 计算缩放比例，保持图片宽高比
+    float scaleX = static_cast<float>(targetWidth) / imgWidth;
+    float scaleY = static_cast<float>(targetHeight) / imgHeight;
+    float scale = min(scaleX, scaleY); // 选择较小的缩放比例，保持宽高比
+
+    // 计算图片渲染区域，确保图片大小为屏幕的一半
+    UINT renderWidth = static_cast<UINT>(imgWidth * scale);
+    UINT renderHeight = static_cast<UINT>(imgHeight * scale);
+    UINT offsetX = (windowWidth - renderWidth) / 2; // 居中显示的 X 偏移
+    UINT offsetY = (windowHeight - renderHeight) / 2; // 居中显示的 Y 偏移
+
+    // 设置透明度
+    ColorMatrix colorMatrix = {
+            1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.5f, 0.0f, // 设置透明度，0.5 表示 50%
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    ImageAttributes imageAttributes;
+    imageAttributes.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
+    graphics.DrawImage(
+            &image,
+            Rect(offsetX, offsetY, renderWidth, renderHeight), // 渲染区域
+            0, 0, imgWidth, imgHeight,                        // 原始图片大小
+            UnitPixel,
+            &imageAttributes
+    );
+
+    // 使用 UpdateLayeredWindow 更新窗口内容
+    POINT ptPos = { 0, 0 };
+    SIZE size = { windowWidth, windowHeight };
+    BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+    UpdateLayeredWindow(hwnd, hdcScreen, nullptr, &size, hdcMem, &ptPos, 0, &blend, ULW_ALPHA);
+
+    // 清理资源
+    SelectObject(hdcMem, hOldBitmap);
+    DeleteObject(hBitmap);
+    DeleteDC(hdcMem);
+    ReleaseDC(nullptr, hdcScreen);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
+    // 初始化 GDI+
+    GdiplusStartupInput gdiplusStartupInput;
+    ULONG_PTR gdiplusToken;
+    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
+    // 注册窗口类
+    const char CLASS_NAME[] = "TransparentWindowClass";
+    WNDCLASS wc = { };
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = CLASS_NAME;
+    RegisterClass(&wc);
+
+    // 获取屏幕分辨率
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // 设置窗口大小为屏幕的一半
+    int windowWidth = screenWidth / 2;
+    int windowHeight = screenHeight / 2;
+
+    // 计算居中位置
+    int x = (screenWidth - windowWidth) / 2;
+    int y = (screenHeight - windowHeight) / 2;
+
+    // 创建窗口
+    HWND hwnd = CreateWindowEx(
+            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT, // 设置窗口为透明、置顶、鼠标穿透
+            CLASS_NAME,
+            "Transparent Window",
+            WS_POPUP, // 无边框窗口
+            x, y, windowWidth, windowHeight,
+            nullptr, nullptr, hInstance, nullptr
+    );
+
+    // 显示窗口
+    ShowWindow(hwnd, nCmdShow);
+
+    // 绘制图片
+    DrawTransparentWindow(hwnd);
+
+    // 创建监听按键的线程
+    std::thread keyListenerThread(KeyListener, hwnd);
+
+    // 进入消息循环
+    MSG msg = { };
+    while (GetMessage(&msg, nullptr, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+
+        // 检查0是否需要重新加载图片
+        if (reloadImage) {
+            reloadImage = false; // 重置标志
+            DrawTransparentWindow(hwnd); // 重新绘制图片
+        }
+        std::cout<< "msg" << std::endl;
+    }
+
+    // 停止线程
+    running = false;
+    keyListenerThread.join();
+
+    // 清理 GDI+
+    GdiplusShutdown(gdiplusToken);
+    return 0;
+}
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    std::cout<< "paint" << std::endl;
+    switch (uMsg) {
+        case WM_PAINT:
+            DrawTransparentWindow(hwnd);
+            return 0;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
