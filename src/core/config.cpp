@@ -79,7 +79,7 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 const wchar_t* GetConfigPath() {
     static wchar_t path[MAX_PATH] = {};
     // 每次基于 imageDirectory 重新拼路径（目录可能被用户修改）
-    swprintf(path, MAX_PATH, L"%s\\GuessDraw.ini", imageDirectory.c_str());
+    swprintf(path, MAX_PATH, L"%ls\\GuessDraw.ini", imageDirectory.c_str());
     return path;
 }
 
@@ -115,7 +115,7 @@ void LoadConfig() {
     for (int i = 0; i < HK_COUNT; i++) {
         g_hotkeys[i].vkey  = GetPrivateProfileIntW(L"Hotkeys", s_hotkeyKeys[i], g_hotkeys[i].vkey, GetConfigPath());
         wchar_t modKey[64];
-        swprintf(modKey, 64, L"%s_Mod", s_hotkeyKeys[i]);
+        swprintf(modKey, 64, L"%ls_Mod", s_hotkeyKeys[i]);
         int mod = GetPrivateProfileIntW(L"Hotkeys", modKey, 0, GetConfigPath());
         g_hotkeys[i].ctrl  = (mod & 1) != 0;
         g_hotkeys[i].shift = (mod & 2) != 0;
@@ -133,7 +133,7 @@ void SaveConfig() {
     const wchar_t* cfgPath = GetConfigPath();
     BOOL ok = WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), cfgPath);
     wchar_t dbg[512];
-    swprintf(dbg, 512, L"路径: %s\n写入结果: %s\nGetLastError: %lu", cfgPath, ok ? L"成功" : L"失败", GetLastError());
+    swprintf(dbg, 512, L"路径: %ls\n写入结果: %ls\nGetLastError: %lu", cfgPath, ok ? L"成功" : L"失败", GetLastError());
     MessageBoxW(nullptr, dbg, L"SaveConfig 诊断", MB_OK);
 
     // [Image] (Directory 已在上面写入)
@@ -157,7 +157,7 @@ void SaveConfig() {
         WritePrivateProfileStringW(L"Hotkeys", s_hotkeyKeys[i], buf, GetConfigPath());
 
         wchar_t modKey[64];
-        swprintf(modKey, 64, L"%s_Mod", s_hotkeyKeys[i]);
+        swprintf(modKey, 64, L"%ls_Mod", s_hotkeyKeys[i]);
         int mod = (g_hotkeys[i].ctrl ? 1 : 0) | (g_hotkeys[i].shift ? 2 : 0) | (g_hotkeys[i].alt ? 4 : 0);
         swprintf(buf, MAX_PATH, L"%d", mod);
         WritePrivateProfileStringW(L"Hotkeys", modKey, buf, GetConfigPath());
