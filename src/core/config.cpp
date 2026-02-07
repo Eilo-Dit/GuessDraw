@@ -91,8 +91,11 @@ static const wchar_t* s_hotkeyKeys[] = {
 };
 
 void LoadConfig() {
-    // 如果配置文件不存在，使用默认值
-    if (GetFileAttributesW(GetConfigPath()) == INVALID_FILE_ATTRIBUTES) return;
+    // 如果配置文件不存在，生成默认配置
+    if (GetFileAttributesW(GetConfigPath()) == INVALID_FILE_ATTRIBUTES) {
+        SaveConfig();
+        return;
+    }
 
     wchar_t buf[MAX_PATH];
 
@@ -126,8 +129,15 @@ void LoadConfig() {
 void SaveConfig() {
     wchar_t buf[MAX_PATH];
 
-    // [Image]
-    WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), GetConfigPath());
+    // DEBUG: 显示配置文件路径（确认后删除）
+    const wchar_t* cfgPath = GetConfigPath();
+    BOOL ok = WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), cfgPath);
+    wchar_t dbg[512];
+    swprintf(dbg, 512, L"路径: %s\n写入结果: %s\nGetLastError: %lu", cfgPath, ok ? L"成功" : L"失败", GetLastError());
+    MessageBoxW(nullptr, dbg, L"SaveConfig 诊断", MB_OK);
+
+    // [Image] (Directory 已在上面写入)
+    // WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), GetConfigPath());
     WritePrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), GetConfigPath());
 
     swprintf(buf, MAX_PATH, L"%d", (int)(opacityFactor * 100));
