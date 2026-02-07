@@ -2,7 +2,7 @@
 
 一款 Windows 桌面透明叠加图片工具，将参考图片以半透明方式覆盖在屏幕上，适用于临摹绘画、UI 对比、截图参考等场景。
 
-![效果图](res/show.png)
+<img src="res/show.png" alt="效果图" width="60%">
 
 ## 使用说明
 
@@ -85,7 +85,3 @@ GuessDraw/
 ├── CMakeLists.txt
 └── README.md
 ```
-
-## License
-
-MIT
