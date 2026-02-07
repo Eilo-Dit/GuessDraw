@@ -10,7 +10,7 @@ using namespace Gdiplus;
 // ============ 全局变量定义 ============
 std::atomic<bool> running(true);
 std::atomic<bool> isWindowVisible(true);
-std::atomic<float> scaleFactor(1.0f);
+std::atomic<float> scaleFactor(0.5f);
 std::atomic<float> opacityFactor(0.5f);
 std::atomic<bool> grayscaleEnabled(false);
 std::atomic<bool> removeWhiteBg(false);

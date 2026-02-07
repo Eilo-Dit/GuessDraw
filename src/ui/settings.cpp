@@ -65,6 +65,9 @@ static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
     }
 
     if (uMsg == WM_CHAR || uMsg == WM_SYSCHAR) return 0;
+    // 阻止 Alt 键激活系统菜单导致焦点丢失
+    if (uMsg == WM_SYSKEYUP) return 0;
+    if (uMsg == WM_SYSCOMMAND && (wParam & 0xFFF0) == SC_KEYMENU) return 0;
 
     return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
 }
@@ -271,9 +274,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             opacityFactor = 0.5f;
             SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_OPACITY), L"50%");
 
-            SendMessage(GetDlgItem(hwnd, IDC_SLIDER_SCALE), TBM_SETPOS, TRUE, 100);
-            scaleFactor = 1.0f;
-            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_SCALE), L"100%");
+            SendMessage(GetDlgItem(hwnd, IDC_SLIDER_SCALE), TBM_SETPOS, TRUE, 50);
+            scaleFactor = 0.5f;
+            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_SCALE), L"50%");
 
             SendMessage(GetDlgItem(hwnd, IDC_CHECK_GRAYSCALE), BM_SETCHECK, BST_UNCHECKED, 0);
             grayscaleEnabled = false;

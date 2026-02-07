@@ -112,7 +112,7 @@ void LoadConfig() {
     currentImagePath = buf;
 
     opacityFactor = GetPrivateProfileIntW(L"Image", L"Opacity", 50, GetConfigPath()) / 100.0f;
-    scaleFactor   = GetPrivateProfileIntW(L"Image", L"Scale", 100, GetConfigPath()) / 100.0f;
+    scaleFactor   = GetPrivateProfileIntW(L"Image", L"Scale", 50, GetConfigPath()) / 100.0f;
     grayscaleEnabled = GetPrivateProfileIntW(L"Image", L"Grayscale", 0, GetConfigPath()) != 0;
     removeWhiteBg    = GetPrivateProfileIntW(L"Image", L"RemoveWhite", 0, GetConfigPath()) != 0;
     autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 0, GetConfigPath()) != 0;
