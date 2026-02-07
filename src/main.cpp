@@ -16,7 +16,7 @@ std::atomic<float> opacityFactor(0.5f);
 std::atomic<bool> grayscaleEnabled(false);
 std::atomic<bool> removeWhiteBg(false);
 std::atomic<bool> reloadImage(false);
-std::atomic<bool> autoLoadLatest(false);
+std::atomic<bool> autoLoadLatest(true);
 
 std::wstring currentImagePath;
 std::wstring imageDirectory;

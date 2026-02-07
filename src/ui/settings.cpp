@@ -283,8 +283,8 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             grayscaleEnabled = false;
             SendMessage(GetDlgItem(hwnd, IDC_CHECK_REMOVEWHITE), BM_SETCHECK, BST_UNCHECKED, 0);
             removeWhiteBg = false;
-            SendMessage(GetDlgItem(hwnd, IDC_CHECK_AUTOLOAD), BM_SETCHECK, BST_UNCHECKED, 0);
-            autoLoadLatest = false;
+            SendMessage(GetDlgItem(hwnd, IDC_CHECK_AUTOLOAD), BM_SETCHECK, BST_CHECKED, 0);
+            autoLoadLatest = true;
 
             // 恢复拖动鼠标键默认
             SendMessageW(s_comboDragMouse, CB_SETCURSEL, 0, 0);

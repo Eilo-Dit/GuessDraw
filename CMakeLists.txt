@@ -22,4 +22,9 @@ add_executable(GuessDraw
         res/app.rc
 )
 
+# 静态链接 MinGW 运行时，exe 不再依赖 libstdc++/libgcc/libwinpthread DLL
+if(MINGW)
+    target_link_options(GuessDraw PRIVATE -static-libgcc -static-libstdc++ -static -lpthread)
+endif()
+
 target_link_libraries(GuessDraw gdiplus comctl32 shell32 ole32)

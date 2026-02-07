@@ -106,7 +106,7 @@ void LoadConfig() {
     scaleFactor   = GetPrivateProfileIntW(L"Image", L"Scale", 50, GetConfigPath()) / 100.0f;
     grayscaleEnabled = GetPrivateProfileIntW(L"Image", L"Grayscale", 0, GetConfigPath()) != 0;
     removeWhiteBg    = GetPrivateProfileIntW(L"Image", L"RemoveWhite", 0, GetConfigPath()) != 0;
-    autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 0, GetConfigPath()) != 0;
+    autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 1, GetConfigPath()) != 0;
 
     // [Hotkeys]
     for (int i = 0; i < HK_COUNT; i++) {
