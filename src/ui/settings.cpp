@@ -11,13 +11,6 @@ static HWND s_comboDragMouse = nullptr;
 static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) {
         int vkey = (int)wParam;
-        // 忽略单独的修饰键（作为组合键的一部分）
-        if (vkey == VK_CONTROL || vkey == VK_SHIFT || vkey == VK_MENU ||
-            vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
-            vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
-            vkey == VK_LMENU || vkey == VK_RMENU) {
-            return 0;
-        }
 
         // 找到是哪个 hotkey edit
         int idx = -1;
@@ -26,13 +19,37 @@ static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
         }
         if (idx < 0) return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
 
-        // 拖动修饰键：Delete/Backspace 清空为"无"
-        if (idx == HK_DRAG_MODIFIER && (vkey == VK_DELETE || vkey == VK_BACK)) {
-            s_tempHotkeys[idx].vkey = 0;
+        // 拖动修饰键特殊处理
+        if (idx == HK_DRAG_MODIFIER) {
+            // Delete/Backspace 清空为"无"
+            if (vkey == VK_DELETE || vkey == VK_BACK) {
+                s_tempHotkeys[idx].vkey = 0;
+                s_tempHotkeys[idx].ctrl = false;
+                s_tempHotkeys[idx].shift = false;
+                s_tempHotkeys[idx].alt = false;
+                SetWindowTextW(hwnd, L"无");
+                return 0;
+            }
+            // 修饰键直接设置（不需要组合）
+            int realVkey = vkey;
+            // 通用修饰键转为左侧具体键
+            if (vkey == VK_CONTROL) realVkey = VK_LCONTROL;
+            else if (vkey == VK_SHIFT) realVkey = VK_LSHIFT;
+            else if (vkey == VK_MENU) realVkey = VK_LMENU;
+            s_tempHotkeys[idx].vkey = realVkey;
             s_tempHotkeys[idx].ctrl = false;
             s_tempHotkeys[idx].shift = false;
             s_tempHotkeys[idx].alt = false;
-            SetWindowTextW(hwnd, L"无");
+            std::wstring text = VKeyToString(s_tempHotkeys[idx]);
+            SetWindowTextW(hwnd, text.c_str());
+            return 0;
+        }
+
+        // 其他快捷键：忽略单独的修饰键（作为组合键的一部分）
+        if (vkey == VK_CONTROL || vkey == VK_SHIFT || vkey == VK_MENU ||
+            vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
+            vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
+            vkey == VK_LMENU || vkey == VK_RMENU) {
             return 0;
         }
 
@@ -45,28 +62,6 @@ static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
         std::wstring text = VKeyToString(s_tempHotkeys[idx]);
         SetWindowTextW(hwnd, text.c_str());
         return 0;
-    }
-
-    // 拖动修饰键：允许直接按修饰键
-    if (uMsg == WM_KEYUP || uMsg == WM_SYSKEYUP) {
-        int vkey = (int)wParam;
-        if (vkey == VK_LCONTROL || vkey == VK_RCONTROL ||
-            vkey == VK_LSHIFT || vkey == VK_RSHIFT ||
-            vkey == VK_LMENU || vkey == VK_RMENU) {
-            int idx = -1;
-            for (int i = 0; i < HK_COUNT; i++) {
-                if (s_hkEdits[i] == hwnd) { idx = i; break; }
-            }
-            if (idx == HK_DRAG_MODIFIER) {
-                s_tempHotkeys[idx].vkey = vkey;
-                s_tempHotkeys[idx].ctrl = false;
-                s_tempHotkeys[idx].shift = false;
-                s_tempHotkeys[idx].alt = false;
-                std::wstring text = VKeyToString(s_tempHotkeys[idx]);
-                SetWindowTextW(hwnd, text.c_str());
-                return 0;
-            }
-        }
     }
 
     if (uMsg == WM_CHAR || uMsg == WM_SYSCHAR) return 0;
@@ -205,10 +200,12 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         SendMessageW(s_comboDragMouse, CB_ADDSTRING, 0, (LPARAM)L"鼠标右键");
         SendMessageW(s_comboDragMouse, CB_SETCURSEL, (g_dragMouseButton.load() == VK_RBUTTON) ? 1 : 0, 0);
 
-        // ---- 应用按钮 ----
+        // ---- 应用 / 恢复默认 按钮 ----
         y += 35;
         hBtnApply = CreateWindowW(L"BUTTON", L"应用并刷新", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-            150, y, 120, 30, hwnd, (HMENU)IDC_BTN_APPLY, g_hInstance, nullptr);
+            100, y, 120, 30, hwnd, (HMENU)IDC_BTN_APPLY, g_hInstance, nullptr);
+        CreateWindowW(L"BUTTON", L"恢复默认", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            230, y, 100, 30, hwnd, (HMENU)IDC_BTN_RESET, g_hInstance, nullptr);
 
         return 0;
     }
@@ -248,6 +245,48 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
                 SetWindowTextW(GetDlgItem(hwnd, IDC_EDIT_PATH), path);
                 CoTaskMemFree(pidl);
             }
+        }
+        if (wmId == IDC_BTN_RESET) {
+            // 恢复默认快捷键
+            static const HotkeyBinding defaults[HK_COUNT] = {
+                { VK_END,     false, false, false },
+                { VK_NUMPAD0, false, false, false },
+                { VK_DECIMAL, false, false, false },
+                { VK_NUMPAD8, false, false, false },
+                { VK_NUMPAD2, false, false, false },
+                { VK_UP,      false, false, false },
+                { VK_DOWN,    false, false, false },
+                { VK_LCONTROL,false, false, false },
+                { VK_LEFT,    false, false, false },
+                { VK_RIGHT,   false, false, false },
+            };
+            for (int i = 0; i < HK_COUNT; i++) {
+                s_tempHotkeys[i] = defaults[i];
+                std::wstring text = VKeyToString(s_tempHotkeys[i]);
+                SetWindowTextW(s_hkEdits[i], text.c_str());
+            }
+
+            // 恢复默认图片设置
+            SendMessage(GetDlgItem(hwnd, IDC_SLIDER_OPACITY), TBM_SETPOS, TRUE, 50);
+            opacityFactor = 0.5f;
+            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_OPACITY), L"50%");
+
+            SendMessage(GetDlgItem(hwnd, IDC_SLIDER_SCALE), TBM_SETPOS, TRUE, 100);
+            scaleFactor = 1.0f;
+            SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_SCALE), L"100%");
+
+            SendMessage(GetDlgItem(hwnd, IDC_CHECK_GRAYSCALE), BM_SETCHECK, BST_UNCHECKED, 0);
+            grayscaleEnabled = false;
+            SendMessage(GetDlgItem(hwnd, IDC_CHECK_REMOVEWHITE), BM_SETCHECK, BST_UNCHECKED, 0);
+            removeWhiteBg = false;
+            SendMessage(GetDlgItem(hwnd, IDC_CHECK_AUTOLOAD), BM_SETCHECK, BST_UNCHECKED, 0);
+            autoLoadLatest = false;
+
+            // 恢复拖动鼠标键默认
+            SendMessageW(s_comboDragMouse, CB_SETCURSEL, 0, 0);
+            g_dragMouseButton = VK_LBUTTON;
+
+            InvalidateRect(g_hwndMain, nullptr, TRUE);
         }
         if (wmId == IDC_BTN_APPLY) {
             // 应用图片设置

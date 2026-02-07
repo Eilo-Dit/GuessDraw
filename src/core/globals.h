@@ -81,6 +81,7 @@ extern NOTIFYICONDATAW g_nid;
 #define IDC_LABEL_SCALE       2009
 #define IDC_BTN_APPLY         2010
 #define IDC_COMBO_DRAG_MOUSE  2011
+#define IDC_BTN_RESET         2012
 
 // 快捷键编辑控件 ID（基址 3001，每个动作一个）
 #define IDC_HOTKEY_BASE       3001
