@@ -78,17 +78,8 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 // ============ 配置读写 ============
 const wchar_t* GetConfigPath() {
     static wchar_t path[MAX_PATH] = {};
-    if (path[0] == L'\0') {
-        // 配置文件放在 exe 同目录
-        GetModuleFileNameW(nullptr, path, MAX_PATH);
-        wchar_t* lastSlash = wcsrchr(path, L'\\');
-        if (lastSlash) {
-            lastSlash[1] = L'\0';
-        } else {
-            path[0] = L'\0';
-        }
-        wcscat(path, L"GuessDraw.ini");
-    }
+    // 每次基于 imageDirectory 重新拼路径（目录可能被用户修改）
+    swprintf(path, MAX_PATH, L"%s\\GuessDraw.ini", imageDirectory.c_str());
     return path;
 }
 

@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "hotkeys.h"
 #include <thread>
+#include <filesystem>
 
 using namespace Gdiplus;
 
@@ -17,8 +18,8 @@ std::atomic<bool> removeWhiteBg(false);
 std::atomic<bool> reloadImage(false);
 std::atomic<bool> autoLoadLatest(false);
 
-std::wstring currentImagePath = L"C:\\Users\\Eilo\\Pictures\\zGuess\\1.jpg";
-std::wstring imageDirectory = L"C:\\Users\\Eilo\\Pictures\\zGuess";
+std::wstring currentImagePath;
+std::wstring imageDirectory;
 
 std::atomic<int> windowOffsetX(0);
 std::atomic<int> windowOffsetY(0);
@@ -87,7 +88,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     g_hInstance = hInstance;
 
+    // 默认图片目录：用户图片文件夹\zGuess
+    if (imageDirectory.empty()) {
+        wchar_t picPath[MAX_PATH];
+        SHGetFolderPathW(nullptr, CSIDL_MYPICTURES, nullptr, 0, picPath);
+        imageDirectory = std::wstring(picPath) + L"\\zGuess";
+    }
+    // 确保目录存在
+    std::filesystem::create_directories(imageDirectory);
+
     LoadConfig();
+
+    // LoadConfig 可能更新了 imageDirectory，再次确保目录存在
+    std::filesystem::create_directories(imageDirectory);
 
     INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_BAR_CLASSES };
     InitCommonControlsEx(&icex);

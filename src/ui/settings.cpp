@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "globals.h"
+#include <filesystem>
 
 // 临时快捷键配置（编辑中，应用时写入 g_hotkeys）
 static HotkeyBinding s_tempHotkeys[HK_COUNT];
@@ -299,7 +300,20 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
             wchar_t pathBuf[MAX_PATH];
             GetWindowTextW(GetDlgItem(hwnd, IDC_EDIT_PATH), pathBuf, MAX_PATH);
-            imageDirectory = pathBuf;
+            std::wstring newDir = pathBuf;
+
+            // 目录变化时迁移配置文件
+            if (newDir != imageDirectory) {
+                std::wstring oldConfig = std::wstring(GetConfigPath());
+                imageDirectory = newDir;
+                std::filesystem::create_directories(imageDirectory);
+                std::wstring newConfig = std::wstring(GetConfigPath());
+                try {
+                    if (std::filesystem::exists(oldConfig)) {
+                        std::filesystem::rename(oldConfig, newConfig);
+                    }
+                } catch (...) {}
+            }
 
             // 应用快捷键设置
             for (int i = 0; i < HK_COUNT; i++) {
