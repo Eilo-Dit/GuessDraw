@@ -56,6 +56,7 @@ extern std::wstring imageDirectory;
 
 extern std::atomic<int> windowOffsetX;
 extern std::atomic<int> windowOffsetY;
+extern std::atomic<int> g_dragMouseButton; // VK_LBUTTON 或 VK_RBUTTON
 
 extern HWND g_hwndMain;
 extern HWND g_hwndSettings;
@@ -79,6 +80,7 @@ extern NOTIFYICONDATAW g_nid;
 #define IDC_LABEL_OPACITY     2008
 #define IDC_LABEL_SCALE       2009
 #define IDC_BTN_APPLY         2010
+#define IDC_COMBO_DRAG_MOUSE  2011
 
 // 快捷键编辑控件 ID（基址 3001，每个动作一个）
 #define IDC_HOTKEY_BASE       3001

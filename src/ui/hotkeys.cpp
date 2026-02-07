@@ -87,15 +87,16 @@ void KeyListener(HWND hwnd) {
             Sleep(50);
         }
 
-        // 拖动修饰键 + 鼠标左键
+        // 拖动：可选修饰键 + 鼠标键
         {
             static POINT lastPos = {0, 0};
             static bool dragging = false;
 
-            bool modDown = (GetAsyncKeyState(g_hotkeys[HK_DRAG_MODIFIER].vkey) & 0x8000) != 0;
-            bool lbtnDown = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+            int modVkey = g_hotkeys[HK_DRAG_MODIFIER].vkey;
+            bool modDown = (modVkey == 0) || (GetAsyncKeyState(modVkey) & 0x8000) != 0;
+            bool mbtnDown = (GetAsyncKeyState(g_dragMouseButton.load()) & 0x8000) != 0;
 
-            if (modDown && lbtnDown) {
+            if (modDown && mbtnDown) {
                 POINT curPos;
                 GetCursorPos(&curPos);
 

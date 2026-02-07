@@ -5,6 +5,7 @@
 static HotkeyBinding s_tempHotkeys[HK_COUNT];
 static HWND s_hkEdits[HK_COUNT] = {};
 static WNDPROC s_origEditProc = nullptr;
+static HWND s_comboDragMouse = nullptr;
 
 // 子类化 EDIT 控件，捕获按键设置快捷键
 static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -25,8 +26,16 @@ static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
         }
         if (idx < 0) return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
 
-        // 拖动修饰键特殊处理：只接受修饰键本身
-        // 其他快捷键：记录主键 + 修饰状态
+        // 拖动修饰键：Delete/Backspace 清空为"无"
+        if (idx == HK_DRAG_MODIFIER && (vkey == VK_DELETE || vkey == VK_BACK)) {
+            s_tempHotkeys[idx].vkey = 0;
+            s_tempHotkeys[idx].ctrl = false;
+            s_tempHotkeys[idx].shift = false;
+            s_tempHotkeys[idx].alt = false;
+            SetWindowTextW(hwnd, L"无");
+            return 0;
+        }
+
         s_tempHotkeys[idx].vkey = vkey;
         s_tempHotkeys[idx].ctrl  = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
         s_tempHotkeys[idx].shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -93,7 +102,7 @@ void CreateSettingsWindow() {
         WS_EX_TOOLWINDOW,
         SETTINGS_CLASS, L"GuessDraw 设置",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 420, 620,
+        CW_USEDEFAULT, CW_USEDEFAULT, 420, 680,
         nullptr, nullptr, g_hInstance, nullptr
     );
 
@@ -186,8 +195,18 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             y += 28;
         }
 
+        // ---- 拖动鼠标键选择 ----
+        y += 10;
+        CreateWindowW(L"STATIC", L"拖动鼠标键:", WS_CHILD | WS_VISIBLE, 15, y + 2, 110, 20, hwnd, nullptr, g_hInstance, nullptr);
+        s_comboDragMouse = CreateWindowW(L"COMBOBOX", L"",
+            WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
+            130, y, 160, 100, hwnd, (HMENU)IDC_COMBO_DRAG_MOUSE, g_hInstance, nullptr);
+        SendMessageW(s_comboDragMouse, CB_ADDSTRING, 0, (LPARAM)L"鼠标左键");
+        SendMessageW(s_comboDragMouse, CB_ADDSTRING, 0, (LPARAM)L"鼠标右键");
+        SendMessageW(s_comboDragMouse, CB_SETCURSEL, (g_dragMouseButton.load() == VK_RBUTTON) ? 1 : 0, 0);
+
         // ---- 应用按钮 ----
-        y += 15;
+        y += 35;
         hBtnApply = CreateWindowW(L"BUTTON", L"应用并刷新", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             150, y, 120, 30, hwnd, (HMENU)IDC_BTN_APPLY, g_hInstance, nullptr);
 
@@ -201,6 +220,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             wchar_t buf[32];
             swprintf(buf, 32, L"%d%%", val);
             SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_OPACITY), buf);
+            InvalidateRect(g_hwndMain, nullptr, TRUE);
         }
         if ((HWND)lParam == GetDlgItem(hwnd, IDC_SLIDER_SCALE)) {
             int val = (int)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
@@ -208,6 +228,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             wchar_t buf[32];
             swprintf(buf, 32, L"%d%%", val);
             SetWindowTextW(GetDlgItem(hwnd, IDC_LABEL_SCALE), buf);
+            InvalidateRect(g_hwndMain, nullptr, TRUE);
         }
         return 0;
     }
@@ -242,6 +263,10 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             for (int i = 0; i < HK_COUNT; i++) {
                 g_hotkeys[i] = s_tempHotkeys[i];
             }
+
+            // 应用拖动鼠标键
+            int sel = (int)SendMessageW(s_comboDragMouse, CB_GETCURSEL, 0, 0);
+            g_dragMouseButton = (sel == 1) ? VK_RBUTTON : VK_LBUTTON;
 
             // 保存配置到文件
             SaveConfig();

@@ -32,6 +32,7 @@ const wchar_t* GetHotkeyActionName(int action) {
 }
 
 std::wstring VKeyToString(const HotkeyBinding& hk) {
+    if (hk.vkey == 0) return L"无";
     std::wstring result;
     if (hk.ctrl)  result += L"Ctrl+";
     if (hk.shift) result += L"Shift+";
@@ -78,16 +79,15 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 const wchar_t* GetConfigPath() {
     static wchar_t path[MAX_PATH] = {};
     if (path[0] == L'\0') {
-        wchar_t appdata[MAX_PATH];
-        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, appdata))) {
-            swprintf(path, MAX_PATH, L"%s\\GuessDraw.ini", appdata);
+        // 配置文件放在 exe 同目录
+        GetModuleFileNameW(nullptr, path, MAX_PATH);
+        wchar_t* lastSlash = wcsrchr(path, L'\\');
+        if (lastSlash) {
+            lastSlash[1] = L'\0';
         } else {
-            // 回退到 exe 所在目录
-            GetModuleFileNameW(nullptr, path, MAX_PATH);
-            wchar_t* lastSlash = wcsrchr(path, L'\\');
-            if (lastSlash) *(lastSlash + 1) = L'\0';
-            wcscat(path, L"GuessDraw.ini");
+            path[0] = L'\0';
         }
+        wcscat(path, L"GuessDraw.ini");
     }
     return path;
 }
@@ -127,11 +127,12 @@ void LoadConfig() {
         g_hotkeys[i].shift = (mod & 2) != 0;
         g_hotkeys[i].alt   = (mod & 4) != 0;
     }
+
+    // [Drag]
+    g_dragMouseButton = GetPrivateProfileIntW(L"Drag", L"MouseButton", VK_LBUTTON, GetConfigPath());
 }
 
 void SaveConfig() {
-    // DEBUG: 显示配置文件路径
-    MessageBoxW(nullptr, GetConfigPath(), L"SaveConfig 路径", MB_OK);
     wchar_t buf[MAX_PATH];
 
     // [Image]
@@ -160,4 +161,8 @@ void SaveConfig() {
         swprintf(buf, MAX_PATH, L"%d", mod);
         WritePrivateProfileStringW(L"Hotkeys", modKey, buf, GetConfigPath());
     }
+
+    // [Drag]
+    swprintf(buf, MAX_PATH, L"%d", g_dragMouseButton.load());
+    WritePrivateProfileStringW(L"Drag", L"MouseButton", buf, GetConfigPath());
 }

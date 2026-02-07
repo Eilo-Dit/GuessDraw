@@ -22,6 +22,7 @@ std::wstring imageDirectory = L"C:\\Users\\Eilo\\Pictures\\zGuess";
 
 std::atomic<int> windowOffsetX(0);
 std::atomic<int> windowOffsetY(0);
+std::atomic<int> g_dragMouseButton(VK_LBUTTON);
 
 HWND g_hwndMain = nullptr;
 HWND g_hwndSettings = nullptr;
