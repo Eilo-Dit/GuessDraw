@@ -31,6 +31,7 @@ HINSTANCE g_hInstance = nullptr;
 NOTIFYICONDATAW g_nid = {};
 
 // ============ 主窗口消息处理 ============
+// 处理绘制、托盘事件、菜单命令
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PAINT:
@@ -102,6 +103,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     // LoadConfig 可能更新了 imageDirectory，再次确保目录存在
     std::filesystem::create_directories(imageDirectory);
 
+    // 初始化通用控件（滑块等）
     INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_BAR_CLASSES };
     InitCommonControlsEx(&icex);
 
@@ -120,6 +122,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
+    // 创建分层窗口：置顶 + 透明 + 鼠标穿透
     g_hwndMain = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT,
         CLASS_NAME,
@@ -135,6 +138,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     std::thread keyListenerThread(KeyListener, g_hwndMain);
 
+    // 消息循环，处理设置窗口的 Tab 切换和重绘请求
     MSG msg = {};
     while (GetMessage(&msg, nullptr, 0, 0)) {
         if (g_hwndSettings && IsDialogMessage(g_hwndSettings, &msg)) continue;

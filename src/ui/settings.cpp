@@ -9,6 +9,7 @@ static WNDPROC s_origEditProc = nullptr;
 static HWND s_comboDragMouse = nullptr;
 
 // 子类化 EDIT 控件，捕获按键设置快捷键
+// 拖动修饰键支持单独修饰键和 Delete 清空，其他快捷键支持修饰键组合
 static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) {
         int vkey = (int)wParam;
@@ -73,6 +74,7 @@ static LRESULT CALLBACK HotkeyEditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
     return CallWindowProcW(s_origEditProc, hwnd, uMsg, wParam, lParam);
 }
 
+// 创建或激活设置窗口
 void CreateSettingsWindow() {
     if (g_hwndSettings && IsWindow(g_hwndSettings)) {
         SetForegroundWindow(g_hwndSettings);
@@ -109,6 +111,7 @@ void CreateSettingsWindow() {
     UpdateWindow(g_hwndSettings);
 }
 
+// 设置窗口消息处理
 LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static HWND hSliderOpacity, hSliderScale, hCheckGray, hCheckWhite, hCheckAuto;
     static HWND hEditPath, hBtnBrowse, hLabelOpacity, hLabelScale, hBtnApply;

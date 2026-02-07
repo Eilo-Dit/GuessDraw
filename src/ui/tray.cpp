@@ -1,6 +1,7 @@
 #include "tray.h"
 #include "globals.h"
 
+// 创建系统托盘图标
 void CreateTrayIcon(HWND hwnd) {
     g_nid.cbSize = sizeof(NOTIFYICONDATAW);
     g_nid.hWnd = hwnd;
@@ -12,10 +13,12 @@ void CreateTrayIcon(HWND hwnd) {
     Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
 
+// 移除系统托盘图标
 void RemoveTrayIcon() {
     Shell_NotifyIconW(NIM_DELETE, &g_nid);
 }
 
+// 显示托盘右键菜单
 void ShowTrayMenu(HWND hwnd) {
     HMENU hMenu = CreatePopupMenu();
     AppendMenuW(hMenu, MF_STRING, IDM_SHOW_HIDE, isWindowVisible ? L"隐藏图片" : L"显示图片");

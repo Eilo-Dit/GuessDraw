@@ -1,6 +1,6 @@
 #include "globals.h"
 
-// ============ 快捷键默认配置 ============
+// ============ 快捷键默认配置（序号对应 HotkeyAction 枚举） ============
 HotkeyBinding g_hotkeys[HK_COUNT] = {
     { VK_END,     false, false, false },  // HK_EXIT
     { VK_NUMPAD0, false, false, false },  // HK_TOGGLE_VISIBLE
@@ -14,6 +14,7 @@ HotkeyBinding g_hotkeys[HK_COUNT] = {
     { VK_RIGHT,   false, false, false },  // HK_NEXT_IMAGE
 };
 
+// 返回快捷键动作的中文名称
 const wchar_t* GetHotkeyActionName(int action) {
     static const wchar_t* names[] = {
         L"退出程序",
@@ -31,6 +32,7 @@ const wchar_t* GetHotkeyActionName(int action) {
     return L"未知";
 }
 
+// 将快捷键绑定转为可读字符串，如 "Ctrl+A"、"LCtrl"、"无"
 std::wstring VKeyToString(const HotkeyBinding& hk) {
     if (hk.vkey == 0) return L"无";
     std::wstring result;
@@ -76,6 +78,7 @@ std::wstring VKeyToString(const HotkeyBinding& hk) {
 }
 
 // ============ 配置读写 ============
+// 配置文件位于 imageDirectory 下的 GuessDraw.ini
 const wchar_t* GetConfigPath() {
     static wchar_t path[MAX_PATH] = {};
     // 每次基于 imageDirectory 重新拼路径（目录可能被用户修改）
@@ -83,6 +86,7 @@ const wchar_t* GetConfigPath() {
     return path;
 }
 
+// INI 中快捷键的键名，序号对应 HotkeyAction
 static const wchar_t* s_hotkeyKeys[] = {
     L"Exit", L"ToggleVisible", L"Reload",
     L"OpacityUp", L"OpacityDown",
@@ -90,6 +94,7 @@ static const wchar_t* s_hotkeyKeys[] = {
     L"PrevImage", L"NextImage"
 };
 
+// 从 INI 加载配置，文件不存在则生成默认配置
 void LoadConfig() {
     // 如果配置文件不存在，生成默认配置
     if (GetFileAttributesW(GetConfigPath()) == INVALID_FILE_ATTRIBUTES) {
@@ -117,27 +122,21 @@ void LoadConfig() {
         wchar_t modKey[64];
         swprintf(modKey, 64, L"%ls_Mod", s_hotkeyKeys[i]);
         int mod = GetPrivateProfileIntW(L"Hotkeys", modKey, 0, GetConfigPath());
-        g_hotkeys[i].ctrl  = (mod & 1) != 0;
-        g_hotkeys[i].shift = (mod & 2) != 0;
-        g_hotkeys[i].alt   = (mod & 4) != 0;
+        g_hotkeys[i].ctrl  = (mod & 1) != 0;  // bit0=Ctrl
+        g_hotkeys[i].shift = (mod & 2) != 0;  // bit1=Shift
+        g_hotkeys[i].alt   = (mod & 4) != 0;  // bit2=Alt
     }
 
     // [Drag]
     g_dragMouseButton = GetPrivateProfileIntW(L"Drag", L"MouseButton", VK_LBUTTON, GetConfigPath());
 }
 
+// 将当前全局状态写入 INI 文件
 void SaveConfig() {
     wchar_t buf[MAX_PATH];
 
-    // DEBUG: 显示配置文件路径（确认后删除）
-    const wchar_t* cfgPath = GetConfigPath();
-    BOOL ok = WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), cfgPath);
-    wchar_t dbg[512];
-    swprintf(dbg, 512, L"路径: %ls\n写入结果: %ls\nGetLastError: %lu", cfgPath, ok ? L"成功" : L"失败", GetLastError());
-    MessageBoxW(nullptr, dbg, L"SaveConfig 诊断", MB_OK);
-
-    // [Image] (Directory 已在上面写入)
-    // WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), GetConfigPath());
+    // [Image]
+    WritePrivateProfileStringW(L"Image", L"Directory", imageDirectory.c_str(), GetConfigPath());
     WritePrivateProfileStringW(L"Image", L"ImagePath", currentImagePath.c_str(), GetConfigPath());
 
     swprintf(buf, MAX_PATH, L"%d", (int)(opacityFactor * 100));

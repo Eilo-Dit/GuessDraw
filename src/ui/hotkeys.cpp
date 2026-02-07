@@ -4,7 +4,7 @@
 
 using namespace std;
 
-// 检查某个快捷键绑定是否被按下
+// 检查快捷键是否被按下（主键 + 修饰键全部满足）
 static bool IsHotkeyPressed(const HotkeyBinding& hk) {
     if (!(GetAsyncKeyState(hk.vkey) & 0x8000)) return false;
     if (hk.ctrl  && !(GetAsyncKeyState(VK_CONTROL) & 0x8000)) return false;
@@ -13,6 +13,7 @@ static bool IsHotkeyPressed(const HotkeyBinding& hk) {
     return true;
 }
 
+// 快捷键监听线程，轮询检测按键并触发对应动作
 void KeyListener(HWND hwnd) {
     while (running) {
         // 退出
@@ -87,7 +88,7 @@ void KeyListener(HWND hwnd) {
             Sleep(50);
         }
 
-        // 拖动：可选修饰键 + 鼠标键
+        // 拖动：修饰键(vkey==0表示无修饰键) + 鼠标键
         {
             static POINT lastPos = {0, 0};
             static bool dragging = false;

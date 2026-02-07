@@ -7,6 +7,7 @@
 using namespace Gdiplus;
 namespace fs = std::filesystem;
 
+// 扫描目录，返回修改时间最新的图片路径
 std::wstring FindLatestImage(const std::wstring& dir) {
     std::wstring latestFile;
     std::filesystem::file_time_type latestTime{};
@@ -32,8 +33,9 @@ std::wstring FindLatestImage(const std::wstring& dir) {
     return latestFile;
 }
 
-static bool s_manualSwitch = false;
+static bool s_manualSwitch = false; // 手动切换标志，跳过一次自动加载
 
+// 切换到上/下一张图片 (direction: -1=上一张, +1=下一张)
 void SwitchImage(int direction) {
     std::vector<std::wstring> images;
     try {
@@ -70,6 +72,7 @@ void SwitchImage(int direction) {
     s_manualSwitch = true;
 }
 
+// 绘制透明窗口，应用缩放/透明度/黑白化/去白底等效果
 void DrawTransparentWindow(HWND hwnd) {
     if (s_manualSwitch) {
         s_manualSwitch = false;
@@ -115,6 +118,7 @@ void DrawTransparentWindow(HWND hwnd) {
     bool rmWhite = removeWhiteBg.load();
 
     if (!rmWhite) {
+        // 通过颜色矩阵实现透明度和黑白化
         ColorMatrix colorMatrix;
         if (gray) {
             colorMatrix = {
@@ -145,6 +149,7 @@ void DrawTransparentWindow(HWND hwnd) {
             &imageAttributes
         );
     } else {
+        // 去白底模式：逐像素处理，白色区域设为全透明
         Bitmap tempBmp(imgWidth, imgHeight, PixelFormat32bppARGB);
         {
             BitmapData srcData, dstData;
@@ -193,6 +198,7 @@ void DrawTransparentWindow(HWND hwnd) {
         );
     }
 
+    // 用 UpdateLayeredWindow 将内存 DC 刷新到分层窗口
     POINT ptPos = { 0, 0 };
     SIZE size = { screenWidth, screenHeight };
     BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
