@@ -4,6 +4,7 @@
 #include <gdiplus.h>
 #include <string>
 #include <ctime>
+#include <algorithm>
 #include <shlobj.h>
 
 using namespace Gdiplus;
@@ -50,10 +51,10 @@ static int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
 // 规范化选区矩形（确保 left < right, top < bottom）
 static RECT NormalizeRect(POINT start, POINT end) {
     RECT r;
-    r.left   = min(start.x, end.x);
-    r.top    = min(start.y, end.y);
-    r.right  = max(start.x, end.x);
-    r.bottom = max(start.y, end.y);
+    r.left   = std::min(start.x, end.x);
+    r.top    = std::min(start.y, end.y);
+    r.right  = std::max(start.x, end.x);
+    r.bottom = std::max(start.y, end.y);
     return r;
 }
 
