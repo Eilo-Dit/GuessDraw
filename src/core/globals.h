@@ -24,6 +24,8 @@ enum HotkeyAction {
     HK_DRAG_MODIFIER,   // 拖动修饰键
     HK_PREV_IMAGE,      // 上一张图片
     HK_NEXT_IMAGE,      // 下一张图片
+    HK_ROTATE_CW,       // 顺时针旋转90°
+    HK_ROTATE_CCW,      // 逆时针旋转90°
     HK_COUNT
 };
 
@@ -50,6 +52,7 @@ extern std::atomic<bool> grayscaleEnabled; // 黑白化开关
 extern std::atomic<bool> removeWhiteBg;    // 去白底开关
 extern std::atomic<bool> reloadImage;      // 触发重绘标志
 extern std::atomic<bool> autoLoadLatest;   // 自动加载目录最新图片
+extern std::atomic<int> rotationAngle;     // 旋转角度 (0/90/180/270)
 
 extern std::wstring currentImagePath;      // 当前显示的图片路径
 extern std::wstring imageDirectory;        // 图片目录

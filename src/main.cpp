@@ -17,6 +17,7 @@ std::atomic<bool> grayscaleEnabled(false);
 std::atomic<bool> removeWhiteBg(false);
 std::atomic<bool> reloadImage(false);
 std::atomic<bool> autoLoadLatest(true);
+std::atomic<int> rotationAngle(0);
 
 std::wstring currentImagePath;
 std::wstring imageDirectory;

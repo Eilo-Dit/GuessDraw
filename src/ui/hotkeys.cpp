@@ -97,6 +97,28 @@ void KeyListener(HWND hwnd) {
             nextDown = nowDown;
         }
 
+        // 顺时针旋转（边沿检测）
+        {
+            static bool cwDown = false;
+            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_ROTATE_CW]);
+            if (nowDown && !cwDown) {
+                rotationAngle = (rotationAngle.load() + 10) % 360;
+                InvalidateRect(hwnd, nullptr, TRUE);
+            }
+            cwDown = nowDown;
+        }
+
+        // 逆时针旋转（边沿检测）
+        {
+            static bool ccwDown = false;
+            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_ROTATE_CCW]);
+            if (nowDown && !ccwDown) {
+                rotationAngle = (rotationAngle.load() + 350) % 360;
+                InvalidateRect(hwnd, nullptr, TRUE);
+            }
+            ccwDown = nowDown;
+        }
+
         // 拖动：修饰键(vkey==0表示无修饰键) + 鼠标键
         {
             static POINT lastPos = {0, 0};

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <vector>
 #include <filesystem>
+#include <cmath>
 
 using namespace Gdiplus;
 namespace fs = std::filesystem;
@@ -129,14 +130,39 @@ void DrawTransparentWindow(HWND hwnd) {
     UINT imgHeight = image.GetHeight();
 
     float scale = scaleFactor.load();
-    UINT renderWidth = static_cast<UINT>(imgWidth * scale);
-    UINT renderHeight = static_cast<UINT>(imgHeight * scale);
+    int rotation = rotationAngle.load() % 360;
+
+    // 原始缩放尺寸
+    UINT scaledW = static_cast<UINT>(imgWidth * scale);
+    UINT scaledH = static_cast<UINT>(imgHeight * scale);
+
+    // 计算旋转后的包围盒尺寸（用于屏幕居中）
+    float rad = rotation * 3.14159265f / 180.0f;
+    float cosA = fabsf(cosf(rad));
+    float sinA = fabsf(sinf(rad));
+    UINT renderWidth  = static_cast<UINT>(scaledW * cosA + scaledH * sinA);
+    UINT renderHeight = static_cast<UINT>(scaledW * sinA + scaledH * cosA);
+
     int offsetX = windowOffsetX.load() + (screenWidth - (int)renderWidth) / 2;
     int offsetY = windowOffsetY.load() + (screenHeight - (int)renderHeight) / 2;
 
     float alpha = opacityFactor.load();
     bool gray = grayscaleEnabled.load();
     bool rmWhite = removeWhiteBg.load();
+
+    // 应用旋转：绕包围盒中心旋转
+    // 绘制矩形始终用原始缩放尺寸，居中于包围盒内
+    int drawX = offsetX + ((int)renderWidth - (int)scaledW) / 2;
+    int drawY = offsetY + ((int)renderHeight - (int)scaledH) / 2;
+    Rect drawRect(drawX, drawY, scaledW, scaledH);
+
+    if (rotation != 0) {
+        float cx = offsetX + renderWidth / 2.0f;
+        float cy = offsetY + renderHeight / 2.0f;
+        graphics.TranslateTransform(cx, cy);
+        graphics.RotateTransform((float)rotation);
+        graphics.TranslateTransform(-cx, -cy);
+    }
 
     if (!rmWhite) {
         // 通过颜色矩阵实现透明度和黑白化
@@ -164,7 +190,7 @@ void DrawTransparentWindow(HWND hwnd) {
 
         graphics.DrawImage(
             &image,
-            Rect(offsetX, offsetY, renderWidth, renderHeight),
+            drawRect,
             0, 0, imgWidth, imgHeight,
             UnitPixel,
             &imageAttributes
@@ -213,7 +239,7 @@ void DrawTransparentWindow(HWND hwnd) {
 
         graphics.DrawImage(
             &tempBmp,
-            Rect(offsetX, offsetY, renderWidth, renderHeight),
+            drawRect,
             0, 0, imgWidth, imgHeight,
             UnitPixel
         );

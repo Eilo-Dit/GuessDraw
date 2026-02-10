@@ -103,7 +103,7 @@ void CreateSettingsWindow() {
         WS_EX_TOOLWINDOW,
         SETTINGS_CLASS, L"GuessDraw 设置",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 420, 680,
+        CW_USEDEFAULT, CW_USEDEFAULT, 420, 740,
         nullptr, nullptr, g_hInstance, nullptr
     );
 
@@ -266,6 +266,8 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
                 { VK_LCONTROL,false, false, false },
                 { VK_LEFT,    false, false, false },
                 { VK_RIGHT,   false, false, false },
+                { VK_NUMPAD6, false, false, false },
+                { VK_NUMPAD4, false, false, false },
             };
             for (int i = 0; i < HK_COUNT; i++) {
                 s_tempHotkeys[i] = defaults[i];
@@ -292,6 +294,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             // 恢复拖动鼠标键默认
             SendMessageW(s_comboDragMouse, CB_SETCURSEL, 0, 0);
             g_dragMouseButton = VK_LBUTTON;
+
+            // 恢复旋转角度
+            rotationAngle = 0;
 
             InvalidateRect(g_hwndMain, nullptr, TRUE);
         }

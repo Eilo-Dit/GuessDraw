@@ -12,6 +12,8 @@ HotkeyBinding g_hotkeys[HK_COUNT] = {
     { VK_LCONTROL,false, false, false },  // HK_DRAG_MODIFIER
     { VK_LEFT,    false, false, false },  // HK_PREV_IMAGE
     { VK_RIGHT,   false, false, false },  // HK_NEXT_IMAGE
+    { VK_NUMPAD6, false, false, false },  // HK_ROTATE_CW
+    { VK_NUMPAD4, false, false, false },  // HK_ROTATE_CCW
 };
 
 // 返回快捷键动作的中文名称
@@ -27,6 +29,8 @@ const wchar_t* GetHotkeyActionName(int action) {
         L"拖动修饰键",
         L"上一张图片",
         L"下一张图片",
+        L"顺时针旋转",
+        L"逆时针旋转",
     };
     if (action >= 0 && action < HK_COUNT) return names[action];
     return L"未知";
@@ -91,7 +95,8 @@ static const wchar_t* s_hotkeyKeys[] = {
     L"Exit", L"ToggleVisible", L"Reload",
     L"OpacityUp", L"OpacityDown",
     L"ScaleUp", L"ScaleDown", L"DragModifier",
-    L"PrevImage", L"NextImage"
+    L"PrevImage", L"NextImage",
+    L"RotateCW", L"RotateCCW"
 };
 
 // 从 INI 加载配置，文件不存在则生成默认配置
@@ -115,6 +120,7 @@ void LoadConfig() {
     grayscaleEnabled = GetPrivateProfileIntW(L"Image", L"Grayscale", 0, GetConfigPath()) != 0;
     removeWhiteBg    = GetPrivateProfileIntW(L"Image", L"RemoveWhite", 0, GetConfigPath()) != 0;
     autoLoadLatest   = GetPrivateProfileIntW(L"Image", L"AutoLoad", 1, GetConfigPath()) != 0;
+    rotationAngle    = GetPrivateProfileIntW(L"Image", L"Rotation", 0, GetConfigPath());
 
     // [Hotkeys]
     for (int i = 0; i < HK_COUNT; i++) {
@@ -149,6 +155,8 @@ void SaveConfig() {
     WritePrivateProfileStringW(L"Image", L"RemoveWhite", buf, GetConfigPath());
     swprintf(buf, MAX_PATH, L"%d", (int)autoLoadLatest.load());
     WritePrivateProfileStringW(L"Image", L"AutoLoad", buf, GetConfigPath());
+    swprintf(buf, MAX_PATH, L"%d", rotationAngle.load());
+    WritePrivateProfileStringW(L"Image", L"Rotation", buf, GetConfigPath());
 
     // [Hotkeys]
     for (int i = 0; i < HK_COUNT; i++) {
