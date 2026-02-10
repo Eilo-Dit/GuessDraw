@@ -3,6 +3,7 @@
 #include "tray.h"
 #include "settings.h"
 #include "hotkeys.h"
+#include "screenshot.h"
 #include <thread>
 #include <filesystem>
 
@@ -72,6 +73,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
             break;
         }
+        return 0;
+
+    case WM_START_SCREENSHOT:
+        StartScreenshot(hwnd);
         return 0;
 
     case WM_CLOSE:

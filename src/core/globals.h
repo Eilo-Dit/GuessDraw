@@ -68,7 +68,8 @@ extern HINSTANCE g_hInstance;              // 程序实例句柄
 extern NOTIFYICONDATAW g_nid;              // 托盘图标数据
 
 // ============ 托盘菜单命令 ============
-#define WM_TRAYICON      (WM_USER + 1)
+#define WM_TRAYICON          (WM_USER + 1)
+#define WM_START_SCREENSHOT  (WM_USER + 2)
 #define IDM_SHOW_HIDE    1001
 #define IDM_SETTINGS     1002
 #define IDM_RELOAD       1003
