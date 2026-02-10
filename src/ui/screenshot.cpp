@@ -11,6 +11,7 @@ using namespace Gdiplus;
 
 static const wchar_t* SCREENSHOT_CLASS = L"GuessDraw_Screenshot";
 static bool s_classRegistered = false;
+static HCURSOR s_hCrossCursor = nullptr;
 
 // 截图状态
 static HWND s_hwndMain = nullptr;       // 主窗口句柄
@@ -320,13 +321,67 @@ static void DoCapture() {
     DeleteDC(hdcMem);
     ReleaseDC(nullptr, hdcScreen);
 
+    // 创建天蓝色十字准星光标
+    if (!s_hCrossCursor) {
+        const int sz = 32;
+        const int cx = sz / 2, cy = sz / 2;
+        HDC hdcScr = GetDC(nullptr);
+        HDC hdcColor = CreateCompatibleDC(hdcScr);
+        HDC hdcMask  = CreateCompatibleDC(hdcScr);
+        HBITMAP hbmColor = CreateCompatibleBitmap(hdcScr, sz, sz);
+        HBITMAP hbmMask  = CreateBitmap(sz, sz, 1, 1, nullptr);
+        SelectObject(hdcColor, hbmColor);
+        SelectObject(hdcMask, hbmMask);
+
+        // 透明背景（颜色全黑 + 掩码全白 = 透明）
+        RECT rc = {0, 0, sz, sz};
+        FillRect(hdcColor, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        FillRect(hdcMask, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+        // 用天蓝色绘制十字线
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 174, 255));
+        HPEN hOldPen = (HPEN)SelectObject(hdcColor, hPen);
+        // 横线
+        MoveToEx(hdcColor, 0, cy, nullptr);
+        LineTo(hdcColor, sz, cy);
+        // 竖线
+        MoveToEx(hdcColor, cx, 0, nullptr);
+        LineTo(hdcColor, cx, sz);
+        SelectObject(hdcColor, hOldPen);
+        DeleteObject(hPen);
+
+        // 掩码中十字线位置设为黑色（不透明）
+        HPEN hBlack = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+        HPEN hOldM = (HPEN)SelectObject(hdcMask, hBlack);
+        MoveToEx(hdcMask, 0, cy, nullptr);
+        LineTo(hdcMask, sz, cy);
+        MoveToEx(hdcMask, cx, 0, nullptr);
+        LineTo(hdcMask, cx, sz);
+        SelectObject(hdcMask, hOldM);
+        DeleteObject(hBlack);
+
+        ICONINFO ii = {};
+        ii.fIcon = FALSE;
+        ii.xHotspot = cx;
+        ii.yHotspot = cy;
+        ii.hbmMask  = hbmMask;
+        ii.hbmColor = hbmColor;
+        s_hCrossCursor = CreateIconIndirect(&ii);
+
+        DeleteDC(hdcColor);
+        DeleteDC(hdcMask);
+        DeleteObject(hbmColor);
+        DeleteObject(hbmMask);
+        ReleaseDC(nullptr, hdcScr);
+    }
+
     // 注册窗口类
     if (!s_classRegistered) {
         WNDCLASSEXW wc = {};
         wc.cbSize = sizeof(wc);
         wc.lpfnWndProc = ScreenshotProc;
         wc.hInstance = g_hInstance;
-        wc.hCursor = LoadCursor(nullptr, IDC_CROSS);
+        wc.hCursor = s_hCrossCursor ? s_hCrossCursor : LoadCursor(nullptr, IDC_CROSS);
         wc.lpszClassName = SCREENSHOT_CLASS;
         RegisterClassExW(&wc);
         s_classRegistered = true;
