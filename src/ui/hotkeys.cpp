@@ -72,20 +72,28 @@ void KeyListener(HWND hwnd) {
             Sleep(100);
         }
 
-        // 上一张图片
-        if (IsHotkeyPressed(g_hotkeys[HK_PREV_IMAGE])) {
-            SwitchImage(-1);
-            reloadImage = true;
-            PostMessage(hwnd, WM_USER, 0, 0);
-            Sleep(50);
+        // 上一张图片（边沿检测：仅在按键从未按下变为按下时触发）
+        {
+            static bool prevDown = false;
+            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_PREV_IMAGE]);
+            if (nowDown && !prevDown) {
+                SwitchImage(-1);
+                reloadImage = true;
+                PostMessage(hwnd, WM_USER, 0, 0);
+            }
+            prevDown = nowDown;
         }
 
-        // 下一张图片
-        if (IsHotkeyPressed(g_hotkeys[HK_NEXT_IMAGE])) {
-            SwitchImage(1);
-            reloadImage = true;
-            PostMessage(hwnd, WM_USER, 0, 0);
-            Sleep(50);
+        // 下一张图片（边沿检测）
+        {
+            static bool nextDown = false;
+            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_NEXT_IMAGE]);
+            if (nowDown && !nextDown) {
+                SwitchImage(1);
+                reloadImage = true;
+                PostMessage(hwnd, WM_USER, 0, 0);
+            }
+            nextDown = nowDown;
         }
 
         // 拖动：修饰键(vkey==0表示无修饰键) + 鼠标键
