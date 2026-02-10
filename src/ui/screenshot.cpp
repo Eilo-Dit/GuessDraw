@@ -14,8 +14,10 @@ static bool s_classRegistered = false;
 
 // 截图状态
 static HWND s_hwndMain = nullptr;       // 主窗口句柄
+static HWND s_hwndScreenshot = nullptr; // 截图窗口句柄
 static HBITMAP s_hDesktop = nullptr;     // 桌面截图
 static int s_screenW = 0, s_screenH = 0;
+static const UINT_PTR TIMER_CAPTURE = 1;
 
 // 选区状态
 static bool s_selecting = false;        // 正在拖拽选区
@@ -218,6 +220,7 @@ static void CloseScreenshot(HWND hwnd) {
         s_hDesktop = nullptr;
     }
     DestroyWindow(hwnd);
+    s_hwndScreenshot = nullptr;
     // 恢复主窗口
     if (s_hwndMain && isWindowVisible) {
         ShowWindow(s_hwndMain, SW_SHOW);
@@ -303,15 +306,8 @@ LRESULT CALLBACK ScreenshotProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void StartScreenshot(HWND hwndMain) {
-    s_hwndMain = hwndMain;
-    s_selecting = false;
-    s_hasSelection = false;
-
-    // 隐藏主窗口
-    ShowWindow(hwndMain, SW_HIDE);
-    Sleep(100); // 等待窗口隐藏完成
-
+// 实际执行桌面截取和创建覆盖窗口
+static void DoCapture() {
     // 截取整个桌面
     s_screenW = GetSystemMetrics(SM_CXSCREEN);
     s_screenH = GetSystemMetrics(SM_CYSCREEN);
@@ -336,7 +332,7 @@ void StartScreenshot(HWND hwndMain) {
     }
 
     // 创建全屏无边框置顶窗口
-    HWND hwndSS = CreateWindowExW(
+    s_hwndScreenshot = CreateWindowExW(
         WS_EX_TOPMOST,
         SCREENSHOT_CLASS, L"",
         WS_POPUP | WS_VISIBLE,
@@ -344,6 +340,26 @@ void StartScreenshot(HWND hwndMain) {
         nullptr, nullptr, g_hInstance, nullptr
     );
 
-    SetForegroundWindow(hwndSS);
-    SetFocus(hwndSS);
+    if (s_hwndScreenshot) {
+        SetForegroundWindow(s_hwndScreenshot);
+        SetFocus(s_hwndScreenshot);
+    }
+}
+
+void StartScreenshot(HWND hwndMain) {
+    // 防止重复创建
+    if (s_hwndScreenshot && IsWindow(s_hwndScreenshot)) return;
+
+    s_hwndMain = hwndMain;
+    s_selecting = false;
+    s_hasSelection = false;
+
+    // 隐藏主窗口
+    ShowWindow(hwndMain, SW_HIDE);
+
+    // 用定时器延迟 150ms 后截取桌面，避免阻塞消息循环，确保主窗口已隐藏
+    SetTimer(hwndMain, TIMER_CAPTURE, 150, [](HWND hwnd, UINT, UINT_PTR id, DWORD) {
+        KillTimer(hwnd, id);
+        DoCapture();
+    });
 }

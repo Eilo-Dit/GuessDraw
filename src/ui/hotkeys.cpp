@@ -1,7 +1,6 @@
 #include "hotkeys.h"
 #include "globals.h"
 #include "drawing.h"
-#include "screenshot.h"
 
 using namespace std;
 
