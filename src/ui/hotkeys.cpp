@@ -1,6 +1,7 @@
 #include "hotkeys.h"
 #include "globals.h"
 #include "drawing.h"
+#include "screenshot.h"
 
 using namespace std;
 
@@ -117,6 +118,16 @@ void KeyListener(HWND hwnd) {
                 InvalidateRect(hwnd, nullptr, TRUE);
             }
             ccwDown = nowDown;
+        }
+
+        // 区域截图（边沿检测）
+        {
+            static bool ssDown = false;
+            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_SCREENSHOT]);
+            if (nowDown && !ssDown) {
+                StartScreenshot(hwnd);
+            }
+            ssDown = nowDown;
         }
 
         // 拖动：修饰键(vkey==0表示无修饰键) + 鼠标键

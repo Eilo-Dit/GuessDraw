@@ -26,6 +26,7 @@ enum HotkeyAction {
     HK_NEXT_IMAGE,      // 下一张图片
     HK_ROTATE_CW,       // 顺时针旋转90°
     HK_ROTATE_CCW,      // 逆时针旋转90°
+    HK_SCREENSHOT,      // 区域截图
     HK_COUNT
 };
 

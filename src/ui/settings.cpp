@@ -103,7 +103,7 @@ void CreateSettingsWindow() {
         WS_EX_TOOLWINDOW,
         SETTINGS_CLASS, L"GuessDraw 设置",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-        CW_USEDEFAULT, CW_USEDEFAULT, 420, 740,
+        CW_USEDEFAULT, CW_USEDEFAULT, 420, 770,
         nullptr, nullptr, g_hInstance, nullptr
     );
 
@@ -268,6 +268,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
                 { VK_RIGHT,   false, false, false },
                 { VK_NUMPAD6, false, false, false },
                 { VK_NUMPAD4, false, false, false },
+                { VK_F1,      false, false, false },
             };
             for (int i = 0; i < HK_COUNT; i++) {
                 s_tempHotkeys[i] = defaults[i];

@@ -14,6 +14,7 @@ HotkeyBinding g_hotkeys[HK_COUNT] = {
     { VK_RIGHT,   false, false, false },  // HK_NEXT_IMAGE
     { VK_NUMPAD6, false, false, false },  // HK_ROTATE_CW
     { VK_NUMPAD4, false, false, false },  // HK_ROTATE_CCW
+    { VK_F1,      false, false, false },  // HK_SCREENSHOT
 };
 
 // 返回快捷键动作的中文名称
@@ -31,6 +32,7 @@ const wchar_t* GetHotkeyActionName(int action) {
         L"下一张图片",
         L"顺时针旋转",
         L"逆时针旋转",
+        L"区域截图",
     };
     if (action >= 0 && action < HK_COUNT) return names[action];
     return L"未知";
@@ -96,7 +98,8 @@ static const wchar_t* s_hotkeyKeys[] = {
     L"OpacityUp", L"OpacityDown",
     L"ScaleUp", L"ScaleDown", L"DragModifier",
     L"PrevImage", L"NextImage",
-    L"RotateCW", L"RotateCCW"
+    L"RotateCW", L"RotateCCW",
+    L"Screenshot"
 };
 
 // 从 INI 加载配置，文件不存在则生成默认配置

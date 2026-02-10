@@ -19,6 +19,7 @@ add_executable(GuessDraw
         src/ui/tray.cpp
         src/ui/settings.cpp
         src/ui/hotkeys.cpp
+        src/ui/screenshot.cpp
         res/app.rc
 )
 
