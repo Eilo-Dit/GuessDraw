@@ -7,8 +7,8 @@
 using namespace Gdiplus;
 namespace fs = std::filesystem;
 
-// 扫描目录，返回修改时间最新的图片路径
-std::wstring FindLatestImage(const std::wstring& dir) {
+// 扫描目录，返回修改时间最新的图片路径，同时通过 outTime 返回其时间戳
+std::wstring FindLatestImage(const std::wstring& dir, std::filesystem::file_time_type* outTime = nullptr) {
     std::wstring latestFile;
     std::filesystem::file_time_type latestTime{};
     bool found = false;
@@ -30,10 +30,13 @@ std::wstring FindLatestImage(const std::wstring& dir) {
         }
     } catch (...) {}
 
+    if (found && outTime) *outTime = latestTime;
     return latestFile;
 }
 
-static bool s_manualSwitch = false; // 手动切换标志，跳过一次自动加载
+// 记录已知的最新文件时间戳，只有目录中出现更新的文件时才自动切换
+static std::filesystem::file_time_type s_knownLatestTime{};
+static bool s_knownLatestInitialized = false;
 
 // 切换到上/下一张图片 (direction: -1=上一张, +1=下一张)
 void SwitchImage(int direction) {
@@ -69,17 +72,35 @@ void SwitchImage(int direction) {
         if (newIdx >= (int)images.size()) newIdx = 0;
     }
     currentImagePath = images[newIdx];
-    s_manualSwitch = true;
+}
+
+// 强制加载目录中最新图片并更新时间戳记录
+void ReloadLatestImage() {
+    std::filesystem::file_time_type latestTime{};
+    std::wstring latest = FindLatestImage(imageDirectory, &latestTime);
+    if (!latest.empty()) {
+        s_knownLatestTime = latestTime;
+        s_knownLatestInitialized = true;
+        currentImagePath = latest;
+    }
 }
 
 // 绘制透明窗口，应用缩放/透明度/黑白化/去白底等效果
 void DrawTransparentWindow(HWND hwnd) {
-    if (s_manualSwitch) {
-        s_manualSwitch = false;
-    } else if (autoLoadLatest) {
-        std::wstring latest = FindLatestImage(imageDirectory);
+    if (autoLoadLatest) {
+        std::filesystem::file_time_type latestTime{};
+        std::wstring latest = FindLatestImage(imageDirectory, &latestTime);
         if (!latest.empty()) {
-            currentImagePath = latest;
+            if (!s_knownLatestInitialized) {
+                // 首次初始化，加载最新图片并记录时间戳
+                s_knownLatestTime = latestTime;
+                s_knownLatestInitialized = true;
+                currentImagePath = latest;
+            } else if (latestTime > s_knownLatestTime) {
+                // 目录中出现了新文件，自动切换
+                s_knownLatestTime = latestTime;
+                currentImagePath = latest;
+            }
         }
     }
 

@@ -34,8 +34,9 @@ void KeyListener(HWND hwnd) {
             Sleep(200);
         }
 
-        // 重新加载
+        // 重新加载（强制加载目录中最新图片）
         if (IsHotkeyPressed(g_hotkeys[HK_RELOAD])) {
+            ReloadLatestImage();
             reloadImage = true;
             PostMessage(hwnd, WM_USER, 0, 0);
             Sleep(200);

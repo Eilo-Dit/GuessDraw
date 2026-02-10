@@ -58,6 +58,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             }
             break;
         case IDM_RELOAD:
+            ReloadLatestImage();
             reloadImage = true;
             DrawTransparentWindow(hwnd);
             break;
