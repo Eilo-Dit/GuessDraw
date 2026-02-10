@@ -321,55 +321,63 @@ static void DoCapture() {
     DeleteDC(hdcMem);
     ReleaseDC(nullptr, hdcScreen);
 
-    // 创建天蓝色十字准星光标
+    // 创建天蓝色十字准星光标（32位ARGB，背景完全透明）
     if (!s_hCrossCursor) {
         const int sz = 32;
         const int cx = sz / 2, cy = sz / 2;
+        const int lineW = 2; // 线条粗细
+
+        // 创建 32 位 ARGB DIB
+        BITMAPV5HEADER bi = {};
+        bi.bV5Size        = sizeof(bi);
+        bi.bV5Width       = sz;
+        bi.bV5Height      = -sz; // 自上而下
+        bi.bV5Planes      = 1;
+        bi.bV5BitCount    = 32;
+        bi.bV5Compression = BI_BITFIELDS;
+        bi.bV5RedMask     = 0x00FF0000;
+        bi.bV5GreenMask   = 0x0000FF00;
+        bi.bV5BlueMask    = 0x000000FF;
+        bi.bV5AlphaMask   = 0xFF000000;
+
+        void* pBits = nullptr;
         HDC hdcScr = GetDC(nullptr);
-        HDC hdcColor = CreateCompatibleDC(hdcScr);
-        HDC hdcMask  = CreateCompatibleDC(hdcScr);
-        HBITMAP hbmColor = CreateCompatibleBitmap(hdcScr, sz, sz);
-        HBITMAP hbmMask  = CreateBitmap(sz, sz, 1, 1, nullptr);
-        SelectObject(hdcColor, hbmColor);
-        SelectObject(hdcMask, hbmMask);
+        HBITMAP hbmColor = CreateDIBSection(hdcScr, (BITMAPINFO*)&bi,
+                                            DIB_RGB_COLORS, &pBits, nullptr, 0);
+        HBITMAP hbmMask = CreateBitmap(sz, sz, 1, 1, nullptr);
 
-        // 透明背景（颜色全黑 + 掩码全白 = 透明）
-        RECT rc = {0, 0, sz, sz};
-        FillRect(hdcColor, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
-        FillRect(hdcMask, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        if (pBits) {
+            DWORD* pixels = (DWORD*)pBits;
+            // 全部透明
+            memset(pixels, 0, sz * sz * 4);
 
-        // 用天蓝色绘制十字线
-        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 174, 255));
-        HPEN hOldPen = (HPEN)SelectObject(hdcColor, hPen);
-        // 横线
-        MoveToEx(hdcColor, 0, cy, nullptr);
-        LineTo(hdcColor, sz, cy);
-        // 竖线
-        MoveToEx(hdcColor, cx, 0, nullptr);
-        LineTo(hdcColor, cx, sz);
-        SelectObject(hdcColor, hOldPen);
-        DeleteObject(hPen);
+            // 天蓝色 ARGB: 0xFF00AEFF
+            DWORD color = 0xFF00AEFF; // A=FF R=00 G=AE B=FF
 
-        // 掩码中十字线位置设为黑色（不透明）
-        HPEN hBlack = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-        HPEN hOldM = (HPEN)SelectObject(hdcMask, hBlack);
-        MoveToEx(hdcMask, 0, cy, nullptr);
-        LineTo(hdcMask, sz, cy);
-        MoveToEx(hdcMask, cx, 0, nullptr);
-        LineTo(hdcMask, cx, sz);
-        SelectObject(hdcMask, hOldM);
-        DeleteObject(hBlack);
+            // 画横线
+            for (int y = cy - lineW / 2; y < cy + (lineW + 1) / 2; y++) {
+                if (y < 0 || y >= sz) continue;
+                for (int x = 0; x < sz; x++) {
+                    pixels[y * sz + x] = color;
+                }
+            }
+            // 画竖线
+            for (int x = cx - lineW / 2; x < cx + (lineW + 1) / 2; x++) {
+                if (x < 0 || x >= sz) continue;
+                for (int y = 0; y < sz; y++) {
+                    pixels[y * sz + x] = color;
+                }
+            }
+        }
 
         ICONINFO ii = {};
-        ii.fIcon = FALSE;
+        ii.fIcon    = FALSE;
         ii.xHotspot = cx;
         ii.yHotspot = cy;
         ii.hbmMask  = hbmMask;
         ii.hbmColor = hbmColor;
         s_hCrossCursor = CreateIconIndirect(&ii);
 
-        DeleteDC(hdcColor);
-        DeleteDC(hdcMask);
         DeleteObject(hbmColor);
         DeleteObject(hbmMask);
         ReleaseDC(nullptr, hdcScr);
