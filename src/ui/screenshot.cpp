@@ -244,9 +244,10 @@ LRESULT CALLBACK ScreenshotProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 if (PtInRect(&s_btnConfirm, pt)) {
                     SaveSelection(hwnd);
                     CloseScreenshot(hwnd);
-                    // 触发自动加载
+                    // 触发主窗口重绘以自动加载新截图
                     reloadImage = true;
-                    PostMessage(s_hwndMain, WM_USER, 0, 0);
+                    // PostMessage(s_hwndMain, WM_USER, 0, 0);
+                    InvalidateRect(s_hwndMain, nullptr, TRUE);
                     return 0;
                 }
                 if (PtInRect(&s_btnCancel, pt)) {
