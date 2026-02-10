@@ -96,15 +96,14 @@ static bool SaveSelection(HWND hwnd) {
     if (GetEncoderClsid(L"image/png", &pngClsid) >= 0) {
         // 生成文件名：screenshot_YYYYMMDD_HHMMSS.png
         time_t now = time(nullptr);
-        struct tm t;
-        localtime_s(&t, &now);
+        struct tm* t = localtime(&now);
         wchar_t filename[MAX_PATH];
         swprintf(filename, MAX_PATH, L"%ls\\screenshot_%04d%02d%02d_%02d%02d%02d.png",
                  imageDirectory.c_str(),
-                 t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
-                 t.tm_hour, t.tm_min, t.tm_sec);
+                 t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                 t->tm_hour, t->tm_min, t->tm_sec);
 
-        ok = (bmp.Save(filename, &pngClsid) == Ok);
+        ok = (bmp.Save(filename, &pngClsid, nullptr) == Ok);
     }
 
     DeleteDC(hdcDst);
@@ -137,17 +136,17 @@ static void PaintOverlay(HWND hwnd) {
             // 用四个矩形覆盖选区外的区域
             RECT r = s_selRect;
             // 上
-            g.FillRectangle(&dimBrush, 0, 0, s_screenW, r.top);
+            g.FillRectangle(&dimBrush, (INT)0, (INT)0, (INT)s_screenW, (INT)r.top);
             // 下
-            g.FillRectangle(&dimBrush, 0, r.bottom, s_screenW, s_screenH - r.bottom);
+            g.FillRectangle(&dimBrush, (INT)0, (INT)r.bottom, (INT)s_screenW, (INT)(s_screenH - r.bottom));
             // 左
-            g.FillRectangle(&dimBrush, 0, r.top, r.left, r.bottom - r.top);
+            g.FillRectangle(&dimBrush, (INT)0, (INT)r.top, (INT)r.left, (INT)(r.bottom - r.top));
             // 右
-            g.FillRectangle(&dimBrush, r.right, r.top, s_screenW - r.right, r.bottom - r.top);
+            g.FillRectangle(&dimBrush, (INT)r.right, (INT)r.top, (INT)(s_screenW - r.right), (INT)(r.bottom - r.top));
 
             // 选区边框
             Pen borderPen(Color(255, 0, 120, 215), 2.0f);
-            g.DrawRectangle(&borderPen, r.left, r.top, r.right - r.left, r.bottom - r.top);
+            g.DrawRectangle(&borderPen, (INT)r.left, (INT)r.top, (INT)(r.right - r.left), (INT)(r.bottom - r.top));
 
             // 选区尺寸文字
             int sw = r.right - r.left;
@@ -166,7 +165,7 @@ static void PaintOverlay(HWND hwnd) {
             g.DrawString(sizeText, -1, &font, PointF(tx + 4, ty + 1), &textBrush);
         } else {
             // 无选区时全屏变暗
-            g.FillRectangle(&dimBrush, 0, 0, s_screenW, s_screenH);
+            g.FillRectangle(&dimBrush, (INT)0, (INT)0, (INT)s_screenW, (INT)s_screenH);
 
             // 提示文字
             Font font(L"Segoe UI", 14.0f);
@@ -182,8 +181,8 @@ static void PaintOverlay(HWND hwnd) {
         if (s_hasSelection && !s_selecting) {
             // 确认按钮
             SolidBrush confirmBg(Color(220, 0, 120, 215));
-            g.FillRectangle(&confirmBg, s_btnConfirm.left, s_btnConfirm.top,
-                            s_btnConfirm.right - s_btnConfirm.left, s_btnConfirm.bottom - s_btnConfirm.top);
+            g.FillRectangle(&confirmBg, (INT)s_btnConfirm.left, (INT)s_btnConfirm.top,
+                            (INT)(s_btnConfirm.right - s_btnConfirm.left), (INT)(s_btnConfirm.bottom - s_btnConfirm.top));
             Font btnFont(L"Segoe UI", 10.0f);
             SolidBrush btnText(Color(255, 255, 255, 255));
             StringFormat btnSf;
@@ -196,8 +195,8 @@ static void PaintOverlay(HWND hwnd) {
 
             // 取消按钮
             SolidBrush cancelBg(Color(220, 80, 80, 80));
-            g.FillRectangle(&cancelBg, s_btnCancel.left, s_btnCancel.top,
-                            s_btnCancel.right - s_btnCancel.left, s_btnCancel.bottom - s_btnCancel.top);
+            g.FillRectangle(&cancelBg, (INT)s_btnCancel.left, (INT)s_btnCancel.top,
+                            (INT)(s_btnCancel.right - s_btnCancel.left), (INT)(s_btnCancel.bottom - s_btnCancel.top));
             RectF cancelArea((float)s_btnCancel.left, (float)s_btnCancel.top,
                              (float)(s_btnCancel.right - s_btnCancel.left),
                              (float)(s_btnCancel.bottom - s_btnCancel.top));
