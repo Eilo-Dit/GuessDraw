@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "globals.h"
+#include "screenshot.h"
 #include <filesystem>
 
 // 临时快捷键配置（编辑中，应用时写入 g_hotkeys）
@@ -335,6 +336,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
             // 保存配置到文件
             SaveConfig();
+
+            // 重新注册截图全局热键（快捷键可能已变更）
+            RegisterScreenshotHotkey(g_hwndMain);
 
             reloadImage = true;
             PostMessage(g_hwndMain, WM_PAINT, 0, 0);

@@ -119,16 +119,6 @@ void KeyListener(HWND hwnd) {
             ccwDown = nowDown;
         }
 
-        // 区域截图（边沿检测，通知主线程启动）
-        {
-            static bool ssDown = false;
-            bool nowDown = IsHotkeyPressed(g_hotkeys[HK_SCREENSHOT]);
-            if (nowDown && !ssDown) {
-                PostMessage(hwnd, WM_START_SCREENSHOT, 0, 0);
-            }
-            ssDown = nowDown;
-        }
-
         // 拖动：修饰键(vkey==0表示无修饰键) + 鼠标键
         {
             static POINT lastPos = {0, 0};

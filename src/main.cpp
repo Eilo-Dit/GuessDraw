@@ -32,6 +32,22 @@ HWND g_hwndSettings = nullptr;
 HINSTANCE g_hInstance = nullptr;
 NOTIFYICONDATAW g_nid = {};
 
+// ============ 截图全局热键注册/注销 ============
+void RegisterScreenshotHotkey(HWND hwnd) {
+    UnregisterHotKey(hwnd, HOTKEY_ID_SCREENSHOT);
+    const HotkeyBinding& hk = g_hotkeys[HK_SCREENSHOT];
+    if (hk.vkey == 0) return;
+    UINT mod = MOD_NOREPEAT;
+    if (hk.ctrl)  mod |= MOD_CONTROL;
+    if (hk.shift) mod |= MOD_SHIFT;
+    if (hk.alt)   mod |= MOD_ALT;
+    RegisterHotKey(hwnd, HOTKEY_ID_SCREENSHOT, mod, hk.vkey);
+}
+
+void UnregisterScreenshotHotkey(HWND hwnd) {
+    UnregisterHotKey(hwnd, HOTKEY_ID_SCREENSHOT);
+}
+
 // ============ 主窗口消息处理 ============
 // 处理绘制、托盘事件、菜单命令
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -79,7 +95,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         StartScreenshot(hwnd);
         return 0;
 
+    case WM_HOTKEY:
+        if (wParam == HOTKEY_ID_SCREENSHOT) {
+            StartScreenshot(hwnd);
+        }
+        return 0;
+
     case WM_CLOSE:
+        UnregisterScreenshotHotkey(hwnd);
         RemoveTrayIcon();
         running = false;
         PostQuitMessage(0);
@@ -140,6 +163,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     );
 
     CreateTrayIcon(g_hwndMain);
+    RegisterScreenshotHotkey(g_hwndMain);
     ShowWindow(g_hwndMain, nCmdShow);
     DrawTransparentWindow(g_hwndMain);
 
